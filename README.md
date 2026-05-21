@@ -4,6 +4,7 @@ A free, open-source macOS cleanup utility inspired by CleanMyMac. Scan for regen
 
 [![Latest release](https://img.shields.io/github/v/release/gtarun/MyMacCleaner?label=release)](https://github.com/gtarun/MyMacCleaner/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Sponsor](https://img.shields.io/badge/Sponsor-@gtarun-ea4aaa?logo=github-sponsors&logoColor=white)](https://github.com/sponsors/gtarun)
 
 ## Download
 
@@ -160,6 +161,10 @@ src/
 Contributions are welcome — see **[CONTRIBUTING.md](./CONTRIBUTING.md)** for setup, safety rules, and pull request guidelines.
 
 Report security issues privately — see **[SECURITY.md](./SECURITY.md)**.
+
+## Support this project
+
+MacCleaner is free and open source. If it helps you reclaim disk space or time, you can support ongoing work through **[GitHub Sponsors (@gtarun)](https://github.com/sponsors/gtarun)** — one-time or monthly.
 
 ## Permissions
 

@@ -78,6 +78,10 @@ npm run dist
 
 Upload `dist-electron/MacCleaner-<version>-arm64.dmg` and `MacCleaner-<version>.dmg` to a new [GitHub Release](https://github.com/gtarun/MyMacCleaner/releases/new). Do not commit `dist-electron/`.
 
+## Support
+
+Financial support is optional. Sponsorship helps fund maintenance and new features via [GitHub Sponsors](https://github.com/sponsors/gtarun).
+
 ## Code of conduct
 
 Be respectful and constructive. Harassment or abuse is not tolerated. Report concerns via GitHub issues or by contacting the maintainers privately.
