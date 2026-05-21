@@ -16,6 +16,8 @@ const { validatePickedRoot, addRuntimeAllowedRoot, listRuntimeAllowedRoots } = r
 const settings = require('./settings');
 const { getHealth } = require('./health');
 const { listProcesses, killProcess } = require('./processes');
+const { getTrashInfo, emptyTrash } = require('./trash-bin');
+const { getSystemReport } = require('./system-report');
 const scheduler = require('./scheduler');
 const tray = require('./tray');
 
@@ -215,12 +217,29 @@ function registerIpcHandlers() {
   // Phase 10 — Mac Health snapshot.
   ipcMain.handle('health:get', async () => getHealth());
 
+  // Full categorized system report (opened from the sidebar info card).
+  ipcMain.handle('system:report', async () => getSystemReport());
+
   // Phase 15 — Performance: live process list + kill.
   ipcMain.handle('processes:list', async (_event, opts) => listProcesses(opts || {}));
   ipcMain.handle('processes:kill', async (_event, args) => {
     const pid = args?.pid;
     const force = !!args?.force;
     return killProcess(pid, { force });
+  });
+
+  // Phase 16 — Empty Trash. Inspecting is always free; emptying is the
+  // one permanently-destructive action, gated by a confirm in the UI and
+  // the global dry-run safety toggle here.
+  ipcMain.handle('trash:info', async () => getTrashInfo());
+  ipcMain.handle('trash:empty', async () => {
+    const { safety } = settings.get();
+    const result = await emptyTrash({ dryRun: !!safety?.dryRun });
+    // Record reclaimed space so the tray + Mac Health history stay honest.
+    if (result.ok && !result.dryRun && result.freedBytes > 0) {
+      try { settings.recordCleaned('trash', result.freedBytes); } catch { /* non-fatal */ }
+    }
+    return result;
   });
 }
 

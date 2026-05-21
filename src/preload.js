@@ -9,6 +9,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('api', {
   // --- Handshake ---
   getSystemInfo: () => ipcRenderer.invoke('system:info'),
+  getSystemReport: () => ipcRenderer.invoke('system:report'),
 
   // --- Scans (return a single result object; no streaming yet) ---
   scanSystemJunk: () => ipcRenderer.invoke('scan:system-junk'),
@@ -45,6 +46,10 @@ contextBridge.exposeInMainWorld('api', {
   listProcesses: (opts) => ipcRenderer.invoke('processes:list', opts || {}),
   killProcess:   (pid, force) => ipcRenderer.invoke('processes:kill', { pid, force }),
 
+  // --- Trash bin ---
+  getTrashInfo: () => ipcRenderer.invoke('trash:info'),
+  emptyTrash:   () => ipcRenderer.invoke('trash:empty'),
+
   // --- Settings ---
   getSettings:    ()      => ipcRenderer.invoke('settings:get'),
   updateSettings: (patch) => ipcRenderer.invoke('settings:update', patch),
@@ -71,4 +76,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // --- Onboarding ---
   requestFolderAccess: () => ipcRenderer.invoke('onboarding:request-folder-access'),
+
+  // --- External links (http/https only, enforced in main) ---
+  openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
 });

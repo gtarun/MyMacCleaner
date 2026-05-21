@@ -60,20 +60,20 @@ When adding a scanner category, document which paths it touches and why they are
 
 Built artifacts live in `dist-electron/`, which is **gitignored**. Users download installers from [GitHub Releases](https://github.com/gtarun/MyMacCleaner/releases), not from the repository.
 
-**Automated (recommended):** after bumping `version` in `package.json`, tag and push:
+**Automated (recommended):**
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+npm run release:patch   # or release:minor / release:major
 ```
 
-The [release workflow](.github/workflows/release.yml) runs `npm run build:icon && npm run dist:ci` on macOS and attaches `.dmg` / `.zip` files to that release (`dist:ci` skips electron-builder’s GitHub publish step).
+This bumps `package.json`, commits the version, tags `v{version}`, pushes `main` and the tag. The [release workflow](.github/workflows/release.yml) then builds and attaches `.dmg` / `.zip` files.
+
+Bump only (no tag): `npm run bump patch`. Tag current version (already bumped): `npm run release`.
 
 **Manual:**
 
 ```bash
-npm run build:icon
-npm run dist
+npm run release:build
 ```
 
 Upload `dist-electron/MacCleaner-<version>-arm64.dmg` and `MacCleaner-<version>.dmg` to a new [GitHub Release](https://github.com/gtarun/MyMacCleaner/releases/new). Do not commit `dist-electron/`.

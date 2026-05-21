@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { formatBytes } from '../lib/format.js';
 import { useScans } from '../store/ScanContext.jsx';
 import { RingChart } from '../components/RingChart.jsx';
+import { ConfirmModal } from '../components/ConfirmModal.jsx';
 
 function formatUptime(seconds) {
   if (!seconds) return '—';
@@ -97,6 +98,10 @@ function buildRecommendations(health, results, setActiveTab) {
 export function MacHealth({ isActive, setActiveTab }) {
   const [health, setHealth] = useState(null);
   const [error, setError] = useState(null);
+  const [trash, setTrash] = useState(null);
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const [emptying, setEmptying] = useState(false);
+  const [emptyReport, setEmptyReport] = useState(null);
   const { results } = useScans();
 
   // Initial fetch + refresh every 5s while the tab is visible. We bail
@@ -107,8 +112,11 @@ export function MacHealth({ isActive, setActiveTab }) {
     let mounted = true;
     async function tick() {
       try {
-        const h = await window.api.getHealth();
-        if (mounted) setHealth(h);
+        const [h, t] = await Promise.all([
+          window.api.getHealth(),
+          window.api.getTrashInfo().catch(() => null),
+        ]);
+        if (mounted) { setHealth(h); if (t) setTrash(t); }
       } catch (err) {
         if (mounted) setError(err.message || String(err));
       }
@@ -117,6 +125,21 @@ export function MacHealth({ isActive, setActiveTab }) {
     const id = setInterval(tick, 5000);
     return () => { mounted = false; clearInterval(id); };
   }, [isActive]);
+
+  async function doEmptyTrash() {
+    setEmptying(true);
+    try {
+      const r = await window.api.emptyTrash();
+      setEmptyReport(r);
+      const t = await window.api.getTrashInfo().catch(() => null);
+      if (t) setTrash(t);
+    } catch (err) {
+      setEmptyReport({ ok: false, errors: [{ error: err.message || String(err) }] });
+    } finally {
+      setEmptying(false);
+      setConfirmEmpty(false);
+    }
+  }
 
   const recs = buildRecommendations(health, results, setActiveTab);
 
@@ -231,6 +254,43 @@ export function MacHealth({ isActive, setActiveTab }) {
         </div>
       </div>
 
+      {/* Trash — the one place we permanently reclaim space. */}
+      <div className="trash-card">
+        <div className="trash-card__icon" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" />
+            <path d="M10 11v6M14 11v6" />
+          </svg>
+        </div>
+        <div className="trash-card__body">
+          <div className="trash-card__title">Trash</div>
+          <div className="trash-card__detail">
+            {trash == null
+              ? 'Checking…'
+              : trash.itemCount === 0
+                ? 'Empty — nothing to reclaim'
+                : `${trash.itemCount} item${trash.itemCount === 1 ? '' : 's'} · ${formatBytes(trash.bytes)} reclaimable`}
+          </div>
+          {emptyReport && (
+            <div className={`trash-card__report ${emptyReport.ok ? 'is-ok' : 'is-err'}`}>
+              {emptyReport.ok
+                ? (emptyReport.dryRun
+                    ? `Dry run — would free ${formatBytes(emptyReport.freedBytes)} from ${emptyReport.removedCount} item${emptyReport.removedCount === 1 ? '' : 's'}`
+                    : `Freed ${formatBytes(emptyReport.freedBytes)} from ${emptyReport.removedCount} item${emptyReport.removedCount === 1 ? '' : 's'}`)
+                : `Couldn't empty Trash: ${emptyReport.errors?.[0]?.error || 'unknown error'}`}
+            </div>
+          )}
+        </div>
+        <button
+          className="btn btn--primary"
+          disabled={emptying || !trash || trash.itemCount === 0}
+          onClick={() => { setEmptyReport(null); setConfirmEmpty(true); }}
+        >
+          {emptying ? 'Emptying…' : 'Empty Trash'}
+        </button>
+      </div>
+
       {/* Recommendations */}
       <div className="health-recs">
         <div className="health-recs__title">Recommendations</div>
@@ -273,6 +333,28 @@ export function MacHealth({ isActive, setActiveTab }) {
           );
         })}
       </div>
+
+      <ConfirmModal
+        open={confirmEmpty}
+        title="Empty the Trash?"
+        body={
+          <>
+            <p>
+              This permanently deletes everything in your Trash
+              {trash ? <> — <strong>{trash.itemCount} item{trash.itemCount === 1 ? '' : 's'}</strong>, freeing about <strong>{formatBytes(trash.bytes)}</strong></> : null}.
+              {' '}<strong>This cannot be undone.</strong>
+            </p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+              Unlike the cleaner modules (which move items to Trash so you can recover them),
+              emptying the Trash is final.
+            </p>
+          </>
+        }
+        confirmLabel="Empty Trash"
+        onConfirm={doEmptyTrash}
+        onCancel={() => setConfirmEmpty(false)}
+        busy={emptying}
+      />
     </div>
   );
 }

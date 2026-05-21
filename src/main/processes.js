@@ -7,6 +7,7 @@
 
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
+const os = require('node:os');
 
 const execFileAsync = promisify(execFile);
 
@@ -98,6 +99,11 @@ async function listProcesses({ limit = 80, sortBy = 'mem' } = {}) {
   return {
     snapshotAt: Date.now(),
     sortBy,
+    // `ps` reports %cpu per core (100% == one saturated core), so the sum
+    // across processes can exceed 100% on multi-core machines. We hand the
+    // core count to the renderer so it can express CPU as a share of total
+    // capacity instead of a raw, confusing 150%+ figure.
+    cpuCount: os.cpus().length,
     items: procs,
   };
 }

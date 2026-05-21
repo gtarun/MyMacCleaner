@@ -85,7 +85,7 @@ export function Performance({ isActive }) {
   }
 
   return (
-    <div className="module">
+    <div className="module module--perf">
       <header className="module__header">
         <h1 className="module__title">Performance</h1>
         <p className="module__subtitle">
@@ -98,8 +98,15 @@ export function Performance({ isActive }) {
 
       <div className="perf-totals">
         <div className="perf-total">
-          <div className="perf-total__label">CPU (aggregate)</div>
-          <div className="perf-total__value">{formatCpu(totals.cpu)}</div>
+          <div className="perf-total__label">CPU in use</div>
+          <div className="perf-total__value">
+            {snapshot?.cpuCount
+              ? `${Math.min(100, Math.round(totals.cpu / snapshot.cpuCount))}%`
+              : formatCpu(totals.cpu)}
+          </div>
+          {snapshot?.cpuCount > 0 && (
+            <div className="perf-total__sub">{formatCpu(totals.cpu)} across {snapshot.cpuCount} cores</div>
+          )}
         </div>
         <div className="perf-total">
           <div className="perf-total__label">Memory used by processes</div>

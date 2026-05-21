@@ -11,6 +11,8 @@ import { ScanProvider, useScans } from './store/ScanContext.jsx';
 import { SettingsProvider, useSettings } from './store/SettingsContext.jsx';
 import { Brand, SidebarIcon } from './components/Icons.jsx';
 import { Onboarding } from './components/Onboarding.jsx';
+import { SPONSOR_URL, SPONSOR_AVATAR, openSponsors } from './components/SponsorCard.jsx';
+import { SystemInfoModal } from './components/SystemInfoModal.jsx';
 
 // One source of truth for module metadata. The accent token here drives:
 //   - sidebar icon color + active strip
@@ -60,6 +62,7 @@ function AppShell() {
   const [activeId, setActiveId] = useState('dashboard');
   const [systemInfo, setSystemInfo] = useState(null);
   const [ipcError, setIpcError] = useState(null);
+  const [showSysInfo, setShowSysInfo] = useState(false);
   const { activeScans } = useScans();
   const { settings, loading: settingsLoading } = useSettings();
   // Show onboarding while settings haven't loaded yet (so it doesn't
@@ -133,10 +136,11 @@ function AppShell() {
 
         <div className="sidebar__bottom-nav">
           {bottomItems.map((it) => renderNavItem(it, activeId, activeScans, setActiveId))}
+          <SponsorButton />
         </div>
 
         <div className="sidebar__footer">
-          <SystemInfoCard info={systemInfo} error={ipcError} />
+          <SystemInfoCard info={systemInfo} error={ipcError} onClick={() => setShowSysInfo(true)} />
         </div>
       </aside>
 
@@ -159,6 +163,8 @@ function AppShell() {
 
       {showOnboarding && <Onboarding />}
 
+      <SystemInfoModal open={showSysInfo} onClose={() => setShowSysInfo(false)} />
+
       {activeEntries.length > 0 && (
         <div className="scan-dock" role="status" aria-live="polite">
           {activeEntries.map(([scope, p]) => (
@@ -173,6 +179,30 @@ function AppShell() {
         </div>
       )}
     </div>
+  );
+}
+
+function SponsorButton() {
+  const [avatarOk, setAvatarOk] = useState(true);
+  function open() {
+    window.api?.openExternal?.(SPONSOR_URL).catch(() => { /* no-op */ });
+  }
+  return (
+    <button className="nav-item nav-item--sponsor" onClick={open} title="Support development on GitHub Sponsors">
+      <span className="nav-item__icon nav-item__icon--sponsor">
+        {avatarOk ? (
+          <img
+            className="nav-item__avatar"
+            src={SPONSOR_AVATAR}
+            alt=""
+            onError={() => setAvatarOk(false)}
+          />
+        ) : (
+          <SidebarIcon.sponsor />
+        )}
+      </span>
+      <span className="nav-item__label">Sponsor</span>
+    </button>
   );
 }
 
@@ -222,11 +252,11 @@ function progressLabel(p) {
   return 'Working…';
 }
 
-function SystemInfoCard({ info, error }) {
+function SystemInfoCard({ info, error, onClick }) {
   if (error) return <div className="sysinfo sysinfo--error">IPC error: {error}</div>;
   if (!info) return <div className="sysinfo">Connecting…</div>;
   return (
-    <div className="sysinfo">
+    <button className="sysinfo sysinfo--button" onClick={onClick} title="View full system information">
       <div className="sysinfo__row">
         <span>Host</span>
         <span className="sysinfo__value">{info.hostname}</span>
@@ -237,6 +267,7 @@ function SystemInfoCard({ info, error }) {
           {(info.totalMemGB - info.freeMemGB).toFixed(1)} / {info.totalMemGB} GB
         </span>
       </div>
-    </div>
+      <div className="sysinfo__hint">System info ›</div>
+    </button>
   );
 }

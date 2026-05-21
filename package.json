@@ -31,6 +31,15 @@
     "pack": "npm run build:renderer && electron-builder --dir",
     "dist": "npm run build:renderer && electron-builder",
     "dist:ci": "npm run build:renderer && electron-builder --publish never",
+    "bump": "node scripts/bump.js",
+    "bump:patch": "node scripts/bump.js patch",
+    "bump:minor": "node scripts/bump.js minor",
+    "bump:major": "node scripts/bump.js major",
+    "release": "node scripts/release.js",
+    "release:patch": "node scripts/release.js patch",
+    "release:minor": "node scripts/release.js minor",
+    "release:major": "node scripts/release.js major",
+    "release:build": "npm run build:icon && npm run dist:ci",
     "start": "electron ."
   },
   "devDependencies": {

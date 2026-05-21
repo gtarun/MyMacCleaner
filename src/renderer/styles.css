@@ -131,6 +131,7 @@ input[type="search"], input[type="text"], select {
 
 .sidebar__brand,
 .sidebar__nav,
+.sidebar__bottom-nav,
 .sidebar__footer { -webkit-app-region: no-drag; }
 
 .sidebar__brand {
@@ -241,6 +242,128 @@ input[type="search"], input[type="text"], select {
 
 .sidebar__footer { padding: 10px; border-top: 1px solid var(--border); }
 
+/* GitHub Sponsors button — sits in the bottom nav, tinted pink so it
+   reads as an "extra" rather than a navigation tab. */
+.nav-item--sponsor .nav-item__icon--sponsor {
+  color: #db61a2;
+}
+.nav-item--sponsor:hover {
+  background: rgba(219, 97, 162, 0.10);
+}
+.nav-item--sponsor:hover .nav-item__icon--sponsor {
+  color: #f778ba;
+}
+.nav-item__avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(219, 97, 162, 0.5);
+}
+
+/* Sponsor card — Dashboard (welcome + results). */
+.sponsor-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 22px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  text-align: left;
+  background: linear-gradient(180deg, rgba(219, 97, 162, 0.10) 0%, rgba(219, 97, 162, 0.04) 100%);
+  border: 1px solid rgba(219, 97, 162, 0.26);
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+.sponsor-card:hover {
+  background: linear-gradient(180deg, rgba(219, 97, 162, 0.16) 0%, rgba(219, 97, 162, 0.06) 100%);
+  border-color: rgba(219, 97, 162, 0.45);
+}
+.sponsor-card:active { transform: scale(0.995); }
+.sponsor-card__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: #f778ba;
+  background: rgba(219, 97, 162, 0.14);
+  border: 1px solid rgba(219, 97, 162, 0.4);
+  flex-shrink: 0;
+}
+.sponsor-card__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sponsor-card__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sponsor-card__text strong { font-size: 14px; color: var(--text-primary); }
+.sponsor-card__text span { font-size: 12.5px; color: var(--text-secondary); }
+.sponsor-card__cta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #db61a2 0%, #bf4b8a 100%);
+  box-shadow: 0 6px 16px rgba(219, 97, 162, 0.3);
+}
+
+/* Sticky variant — pins to the bottom of the Dashboard while content
+   scrolls behind it. Needs an opaque base so rows/tiles don't show
+   through the translucent pink. */
+.sponsor-card--sticky {
+  position: sticky;
+  bottom: 16px;
+  margin-top: 24px;
+  background:
+    linear-gradient(180deg, rgba(219, 97, 162, 0.16) 0%, rgba(219, 97, 162, 0.07) 100%),
+    var(--bg-app);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
+}
+.sponsor-card--sticky:hover {
+  background:
+    linear-gradient(180deg, rgba(219, 97, 162, 0.22) 0%, rgba(219, 97, 162, 0.10) 100%),
+    var(--bg-app);
+}
+
+/* Empty Trash card (Mac Health) */
+.trash-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-tile);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin: 14px 0;
+  backdrop-filter: blur(20px);
+}
+.trash-card__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: var(--acc-blue);
+  background: rgba(10, 132, 255, 0.12);
+  flex-shrink: 0;
+}
+.trash-card__body { flex: 1; min-width: 0; }
+.trash-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.trash-card__detail {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.trash-card__report { font-size: 12.5px; margin-top: 5px; }
+.trash-card__report.is-ok { color: #a4ecb8; }
+.trash-card__report.is-err { color: #ff9a93; }
+
 /* ─────────────────────────────────────────────────────────────────────
  * Performance / process table
  * ──────────────────────────────────────────────────────────────────── */
@@ -273,6 +396,12 @@ input[type="search"], input[type="text"], select {
   font-variant-numeric: tabular-nums;
   margin-top: 4px;
   color: var(--text-primary);
+}
+.perf-total__sub {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
 }
 
 .perf-recs {
@@ -435,6 +564,80 @@ input[type="search"], input[type="text"], select {
   margin: 0 0 10px;
   text-align: center;
   color: var(--text-primary);
+}
+
+/* "You're ready" success badge — fully self-contained so the glow can't
+   bleed into the heading below it. The halo blur is sized to stay inside
+   the reserved box plus the bottom margin. */
+.onboarding__ready {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin: 6px auto 34px;
+  display: grid;
+  place-items: center;
+}
+.onboarding__ready-halo {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #5856d6 0%, transparent 68%);
+  opacity: 0.45;
+  filter: blur(26px);
+  pointer-events: none;
+}
+.onboarding__ready-badge {
+  position: relative;
+  z-index: 1;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5856d6 0%, #007aff 100%);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 0 36px rgba(0,122,255,0.5);
+}
+
+/* Sponsor card on the onboarding "ready" step + reusable elsewhere. */
+.onboarding__sponsor {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 13px 16px;
+  border-radius: var(--radius-md);
+  text-align: left;
+  background: rgba(219, 97, 162, 0.08);
+  border: 1px solid rgba(219, 97, 162, 0.28);
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.onboarding__sponsor:hover {
+  background: rgba(219, 97, 162, 0.14);
+  border-color: rgba(219, 97, 162, 0.45);
+}
+.onboarding__sponsor-heart {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: #f778ba;
+  background: rgba(219, 97, 162, 0.16);
+  flex-shrink: 0;
+}
+.onboarding__sponsor-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.onboarding__sponsor-text strong { font-size: 13.5px; color: var(--text-primary); }
+.onboarding__sponsor-text span { font-size: 12px; color: var(--text-secondary); }
+.onboarding__sponsor-cta {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f778ba;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(219, 97, 162, 0.4);
 }
 
 .onboarding__lede {
@@ -1047,6 +1250,117 @@ select {
 .sysinfo__row { display: flex; justify-content: space-between; }
 .sysinfo__value { color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
+.sysinfo--button {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+  border: 1px solid transparent;
+}
+.sysinfo--button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border);
+}
+.sysinfo__hint {
+  margin-top: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+}
+.sysinfo--button:hover .sysinfo__hint { color: var(--acc-indigo); }
+
+/* ── System Information modal ──────────────────────────────────────── */
+.sysmodal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 40px;
+}
+.sysmodal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 6, 9, 0.6);
+  backdrop-filter: blur(8px);
+}
+.sysmodal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(28, 30, 38, 0.98) 0%, rgba(18, 20, 26, 0.98) 100%);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.sysmodal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.sysmodal__title { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.sysmodal__header-actions { display: flex; align-items: center; gap: 8px; }
+.sysmodal__close {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-tertiary);
+}
+.sysmodal__close:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+.sysmodal__body { padding: 14px 22px 22px; overflow-y: auto; }
+.sysmodal__loading { color: var(--text-secondary); padding: 24px 0; text-align: center; }
+.sysmodal__section { margin-top: 16px; }
+.sysmodal__section:first-child { margin-top: 4px; }
+.sysmodal__section-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+.sysmodal__rows {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.sysmodal__row {
+  display: grid;
+  grid-template-columns: 130px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--border);
+  transition: background 100ms ease;
+}
+.sysmodal__row:last-child { border-bottom: none; }
+.sysmodal__row:hover { background: rgba(255,255,255,0.04); }
+.sysmodal__row-label { font-size: 12.5px; color: var(--text-secondary); }
+.sysmodal__row-value {
+  font-size: 12.5px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+.sysmodal__row-copy {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+.sysmodal__row:hover .sysmodal__row-copy { opacity: 1; }
+
 /* ─────────────────────────────────────────────────────────────────────
  * Module page chrome
  * ──────────────────────────────────────────────────────────────────── */
@@ -1055,6 +1369,28 @@ select {
   max-width: 940px;
   margin: 0 auto;
   padding: 48px 44px 120px;
+}
+
+/* Performance fills the viewport and confines scrolling to the process
+   list — the header, totals, recommendations and toolbar stay pinned
+   while only the table scrolls. */
+.module--perf {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 24px;
+  overflow: hidden;
+}
+.module--perf .proc-table {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.module--perf .proc-table__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #121419; /* opaque — rows must not bleed through when scrolled */
 }
 
 .module__header { margin-bottom: 28px; }

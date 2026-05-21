@@ -1,6 +1,7 @@
 import { useScans } from '../store/ScanContext.jsx';
 import { formatBytes, formatCount } from '../lib/format.js';
 import { TileIcon, SidebarIcon } from '../components/Icons.jsx';
+import { SponsorCard } from '../components/SponsorCard.jsx';
 
 // Accent hex per module — passed into TileIcon so each tile's 3D-ish
 // glyph picks up its module color.
@@ -170,6 +171,8 @@ export function Dashboard({ setActiveTab }) {
           <div className="welcome__note">
             Duplicates runs separately — open the Duplicates tab to pick folders.
           </div>
+
+          <SponsorCard sticky />
         </div>
       </div>
     );
@@ -268,6 +271,8 @@ export function Dashboard({ setActiveTab }) {
           );
         })}
       </div>
+
+      <SponsorCard sticky />
     </div>
   );
 }

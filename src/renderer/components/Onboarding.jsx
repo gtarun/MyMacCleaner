@@ -119,12 +119,13 @@ export function Onboarding({ onDone }) {
 
         {current === 'ready' && (
           <>
-            <div className="onboarding__brand">
-              <div className="welcome__glow" style={{ width: 200, height: 200, margin: '0 auto' }}>
-                <div className="welcome__halo" style={{ width: 200, height: 200 }} />
-                <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'linear-gradient(135deg, #5856d6 0%, #007aff 100%)', display: 'grid', placeItems: 'center', boxShadow: '0 0 40px rgba(0,122,255,0.55)', zIndex: 1, position: 'relative' }}>
-                  <span style={{ color: 'white', fontSize: 28, fontWeight: 700 }}>✓</span>
-                </div>
+            <div className="onboarding__ready">
+              <div className="onboarding__ready-halo" />
+              <div className="onboarding__ready-badge">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white"
+                     strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12.5l4.5 4.5L19 7" />
+                </svg>
               </div>
             </div>
             <h1 className="onboarding__title">You're ready</h1>
@@ -142,6 +143,22 @@ export function Onboarding({ onDone }) {
                 scheduler keeps running. Quit from the menu bar to fully exit.
               </div>
             </div>
+
+            <button
+              className="onboarding__sponsor"
+              onClick={() => window.api?.openExternal?.('https://github.com/sponsors/gtarun')}
+            >
+              <span className="onboarding__sponsor-heart" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 21l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.18L12 21z" />
+                </svg>
+              </span>
+              <span className="onboarding__sponsor-text">
+                <strong>Enjoying MacCleaner?</strong>
+                <span>It's free and open. Support development on GitHub Sponsors.</span>
+              </span>
+              <span className="onboarding__sponsor-cta">Sponsor</span>
+            </button>
           </>
         )}
 

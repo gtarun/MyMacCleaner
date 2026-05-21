@@ -125,21 +125,35 @@ Other scripts: `npm run build` (renderer only), `npm run pack` (unsigned `.app` 
 
 ### Releases for maintainers
 
-**Option A — CI (recommended):** push a version tag; GitHub Actions builds on `macos-latest` and uploads assets to the release.
+| Command | What it does |
+|---------|----------------|
+| `npm run bump` / `bump:patch` | Bump `package.json` + lockfile only (default: patch) |
+| `npm run bump:minor` / `bump:major` | Bump minor or major |
+| `npm run release` | Tag `v{version}` + push branch & tag → CI uploads DMGs |
+| `npm run release:patch` | Bump patch, commit version, tag, push (full release) |
+| `npm run release:minor` / `release:major` | Same with minor / major bump |
+| `npm run release -- --dry-run` | Preview steps without changing git |
+| `npm run release:build` | Local build only → `dist-electron/` (manual upload) |
+
+**CI release (recommended):**
 
 ```bash
-# Bump version in package.json first, then:
-git tag v0.1.0
-git push origin v0.1.0
+# One command: bump, commit version, tag, push — then Actions builds DMGs
+npm run release:patch
 ```
 
-If a tag workflow failed partway through, delete the empty release on GitHub (if any), delete the tag locally and on GitHub, then re-tag and push after fixing the workflow.
+Or bump separately, commit other changes, then tag the current version:
 
-Workflow: [.github/workflows/release.yml](./.github/workflows/release.yml).
+```bash
+npm run bump minor
+git add package.json package-lock.json && git commit -m "chore: bump version"
+# ... other commits ...
+npm run release
+```
 
-**Option B — manual:** run `npm run build:icon && npm run dist` locally, create a [GitHub Release](https://github.com/gtarun/MyMacCleaner/releases/new), and upload the `.dmg` files from `dist-electron/`.
+Workflow: [.github/workflows/release.yml](./.github/workflows/release.yml). If a run failed, delete the bad tag/release on GitHub, fix the workflow, then run `npm run release` again.
 
-Do not commit `dist-electron/` — only upload those files to the release.
+**Manual upload:** `npm run release:build`, then attach `dist-electron/*.dmg` on [GitHub Releases](https://github.com/gtarun/MyMacCleaner/releases/new). Do not commit `dist-electron/`.
 
 ## Project layout
 
