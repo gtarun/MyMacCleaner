@@ -41,6 +41,7 @@
   --acc-purple: #bf6bf2;
   --acc-amber:  #f0b429;
   --acc-teal:   #2dd4bf;
+  --acc-rose:   #fb7185;
 
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.4);
 
@@ -60,6 +61,7 @@
 [data-accent="purple"] { --acc: var(--acc-purple); --acc-deep: #41186b; }
 [data-accent="amber"]  { --acc: var(--acc-amber);  --acc-deep: #4a3608; }
 [data-accent="teal"]   { --acc: var(--acc-teal);   --acc-deep: #0f3d38; }
+[data-accent="rose"]   { --acc: var(--acc-rose);   --acc-deep: #5a1e2e; }
 
 /* Stale Projects — inline badges on each project row. */
 .stale-badge {
@@ -80,6 +82,142 @@
   font-weight: 500;
   color: var(--text-tertiary);
   vertical-align: middle;
+}
+
+/* ── History view ──────────────────────────────────────────────────── */
+.hist-day { margin-bottom: 22px; }
+.hist-day__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  margin: 0 0 8px 2px;
+}
+.hist-entry {
+  background: var(--bg-tile);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.hist-entry__head { display: flex; align-items: center; gap: 10px; padding: 4px 12px 4px 4px; }
+.hist-entry__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 8px;
+}
+.hist-entry__main:hover { background: rgba(255,255,255,0.03); border-radius: 8px; }
+.hist-entry__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hist-entry__time { font-size: 12px; font-weight: 500; color: var(--text-tertiary); }
+.hist-entry__meta {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.hist-entry__restore { flex-shrink: 0; padding: 6px 14px; font-size: 12.5px; }
+.hist-entry__msg {
+  padding: 0 16px 10px 38px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.hist-entry__items { padding: 2px 16px 12px 38px; }
+.hist-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 12.5px;
+  border-top: 1px solid var(--border);
+}
+.hist-item__name { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-item__bytes { color: var(--text-tertiary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hist-item--restored .hist-item__name { color: var(--text-tertiary); text-decoration: line-through; }
+
+.hist-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.hist-badge--perm { color: #ff9a93; background: rgba(255,91,82,0.12); border: 1px solid rgba(255,91,82,0.3); }
+.hist-badge--restored { color: #a4ecb8; background: rgba(52,199,89,0.12); border: 1px solid rgba(52,199,89,0.3); }
+
+/* ── Disk space visualizer ─────────────────────────────────────────── */
+.map-cta { display: flex; gap: 12px; justify-content: center; }
+.map-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.map-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; min-width: 0; }
+.map-crumb { display: inline-flex; align-items: center; }
+.map-crumb__sep { color: var(--text-tertiary); margin: 0 4px; }
+.map-crumb__btn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--acc-rose);
+  padding: 2px 4px;
+  border-radius: 5px;
+}
+.map-crumb__btn:hover:not(:disabled) { background: rgba(251,113,133,0.12); }
+.map-crumb__btn:disabled { color: var(--text-primary); cursor: default; }
+.map-bar__right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.map-total { font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+.map-canvas {
+  width: 100%;
+  aspect-ratio: 1000 / 580;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-tile);
+}
+.map-svg { width: 100%; height: 100%; display: block; }
+.map-tile { cursor: default; }
+.map-tile--drill { cursor: pointer; }
+.map-tile rect { transition: filter 100ms ease; }
+.map-tile:hover rect { filter: brightness(1.15); }
+.map-tile__label {
+  fill: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: rgba(0,0,0,0.35);
+  stroke-width: 2px;
+}
+.map-tile__size {
+  fill: rgba(255,255,255,0.85);
+  font-size: 11px;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: rgba(0,0,0,0.3);
+  stroke-width: 2px;
+}
+.map-hint {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  min-height: 18px;
 }
 
 * { box-sizing: border-box; }

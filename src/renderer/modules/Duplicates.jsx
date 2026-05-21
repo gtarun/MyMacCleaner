@@ -119,7 +119,10 @@ export function Duplicates() {
     setCleaning(true);
     try {
       const paths = toRemove.map((x) => x.path);
-      const results = await window.api.trashItems(paths);
+      const results = await window.api.trashItems(paths, {
+        scope: 'duplicates',
+        items: toRemove.map((x) => ({ path: x.path, bytes: x.bytes })),
+      });
       const okCount = results.filter((r) => r.ok).length;
       const failed = results.filter((r) => !r.ok);
       const dryRun = results.some((r) => r.dryRun);

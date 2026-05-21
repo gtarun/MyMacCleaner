@@ -37,6 +37,10 @@ const DEFAULTS = {
   safety: {
     dryRun: false,                      // preview mode — never call shell.trashItem
   },
+  // User-defined paths the cleaner must never scan or remove. Absolute
+  // paths; anything at or inside one of these is skipped by the walkers
+  // and hard-rejected by the safety gate.
+  exclusions: [],
   schedule: {
     enabled: false,
     frequency: 'weekly',                // 'daily' | 'weekly'

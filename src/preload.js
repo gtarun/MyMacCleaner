@@ -25,13 +25,27 @@ contextBridge.exposeInMainWorld('api', {
   // --- Duplicates ---
   pickFolders: () => ipcRenderer.invoke('dialog:pick-folders'),
   listPickedRoots: () => ipcRenderer.invoke('dialog:list-picked-roots'),
+  // Side-effect-free picker for choosing exclusion folders.
+  pickPaths: () => ipcRenderer.invoke('dialog:pick-paths'),
   scanDuplicates: (roots) => ipcRenderer.invoke('scan:duplicates', { roots }),
 
   // --- Stale projects (reuses picked roots) ---
   scanStaleProjects: (roots) => ipcRenderer.invoke('scan:stale-projects', { roots }),
 
+  // --- Disk space visualizer ---
+  scanDiskMap: (opts) => ipcRenderer.invoke('scan:disk-map', opts || {}),
+
   // --- Cleanup (the only path that mutates disk) ---
-  trashItems: (paths) => ipcRenderer.invoke('clean:trash-items', paths),
+  // `meta` is optional: { scope, items:[{path,bytes}] } enables accurate
+  // history logging. Falls back to a bare paths array when omitted.
+  trashItems: (paths, meta) =>
+    ipcRenderer.invoke('clean:trash-items',
+      meta ? { paths, scope: meta.scope, items: meta.items } : paths),
+
+  // --- Cleanup history + restore ---
+  getHistory:     () => ipcRenderer.invoke('history:list'),
+  restoreHistory: (id) => ipcRenderer.invoke('history:restore', id),
+  clearHistory:   () => ipcRenderer.invoke('history:clear'),
 
   // --- Streaming progress (subscribe once, filter by payload.scope) ---
   // Returns an unsubscribe function. The renderer must call it on

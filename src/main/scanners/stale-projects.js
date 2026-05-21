@@ -17,6 +17,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { measureDir } = require('../lib/walk');
+const { isExcluded } = require('../safety/allowlist');
 
 // Heavy, regenerable directories worth reclaiming. Subset of the broader
 // dev-noise list — these are the ones that are both large and trivially
@@ -125,7 +126,9 @@ async function discover(dir, depth, maxDepth, ctx) {
   }
 
   const names = entries.map((e) => e.name);
-  const heavyChildren = entries.filter((e) => e.isDirectory() && HEAVY_DIRS.has(e.name));
+  const heavyChildren = entries.filter(
+    (e) => e.isDirectory() && HEAVY_DIRS.has(e.name) && !isExcluded(path.join(dir, e.name)),
+  );
 
   if (heavyChildren.length > 0) {
     const markers = detectMarkers(names);
@@ -175,7 +178,9 @@ async function discover(dir, depth, maxDepth, ctx) {
       if (HEAVY_DIRS.has(entry.name)) continue;
       if (isBundle(entry.name)) continue;
       if (entry.isSymbolicLink && entry.isSymbolicLink()) continue;
-      await discover(path.join(dir, entry.name), depth + 1, maxDepth, ctx);
+      const childPath = path.join(dir, entry.name);
+      if (isExcluded(childPath)) continue;
+      await discover(childPath, depth + 1, maxDepth, ctx);
     }
   }
 }

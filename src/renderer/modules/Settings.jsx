@@ -385,9 +385,21 @@ function ScanningTab({ settings, update }) {
 function SafetyTab({ settings, update, results }) {
   const safety = settings.safety || {};
   const lastCleaned = settings.lastCleaned || {};
+  const exclusions = Array.isArray(settings.exclusions) ? settings.exclusions : [];
 
   function toggleDryRun() {
     update({ safety: { dryRun: !safety.dryRun } });
+  }
+
+  async function addExclusion() {
+    const r = await window.api.pickPaths();
+    if (r.canceled || r.paths.length === 0) return;
+    const next = Array.from(new Set([...exclusions, ...r.paths]));
+    update({ exclusions: next });
+  }
+
+  function removeExclusion(p) {
+    update({ exclusions: exclusions.filter((x) => x !== p) });
   }
 
   const cleanedRows = [
@@ -412,6 +424,31 @@ function SafetyTab({ settings, update, results }) {
           <input type="checkbox" checked={!!safety.dryRun} onChange={toggleDryRun} />
           <span>Preview only — don't move anything to Trash</span>
         </label>
+      </section>
+
+      <section className="settings-section">
+        <h3 className="settings-section__title">Exclusions</h3>
+        <p className="settings-section__hint">
+          Folders here are never scanned and never removed — the safety gate hard-refuses anything
+          inside them, even if it would otherwise qualify. Use this for project folders, archives,
+          or anything you want fully off-limits.
+        </p>
+
+        <div className="settings-list">
+          {exclusions.length === 0 && (
+            <div className="settings-row settings-row--empty">No exclusions — nothing is protected beyond the built-in never-touch list.</div>
+          )}
+          {exclusions.map((p) => (
+            <div key={p} className="settings-row">
+              <code className="settings-row__path">{abbreviateHome(p)}</code>
+              <button className="settings-row__remove" onClick={() => removeExclusion(p)}>×</button>
+            </div>
+          ))}
+        </div>
+
+        <div className="settings-actions">
+          <button className="btn btn--ghost" onClick={addExclusion}>+ Add folder to exclude</button>
+        </div>
       </section>
 
       <section className="settings-section">

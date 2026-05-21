@@ -124,7 +124,10 @@ export function StaleProjects() {
     setCleaning(true);
     try {
       const paths = toRemove.map((x) => x.path);
-      const results = await window.api.trashItems(paths);
+      const results = await window.api.trashItems(paths, {
+        scope: 'stale-projects',
+        items: toRemove.map((x) => ({ path: x.path, bytes: x.bytes })),
+      });
       const okCount = results.filter((r) => r.ok).length;
       const failed = results.filter((r) => !r.ok);
       const dryRun = results.some((r) => r.dryRun);

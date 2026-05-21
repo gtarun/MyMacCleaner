@@ -18,6 +18,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const { isDevNoise } = require('../lib/walk');
+const { isExcluded } = require('../safety/allowlist');
 
 const HOME = os.homedir();
 
@@ -76,6 +77,9 @@ async function walk(dir, onFile, counters = { visited: 0, skipped: 0 }) {
   for (const entry of entries) {
     const name = entry.name;
     if (entry.isSymbolicLink()) continue;
+    const entryPath = path.join(dir, name);
+    // User exclusions: never descend into or surface an excluded path.
+    if (isExcluded(entryPath)) continue;
     if (entry.isDirectory()) {
       // Dev-noise check FIRST so the counter reflects skipped projects
       // (.git, .next, .venv all match here). isHidden is checked after
@@ -86,14 +90,14 @@ async function walk(dir, onFile, counters = { visited: 0, skipped: 0 }) {
         continue;
       }
       if (isHidden(name)) continue;
-      await walk(path.join(dir, name), onFile, counters);
+      await walk(entryPath, onFile, counters);
       continue;
     }
     if (isHidden(name)) continue;
     if (!entry.isFile()) continue;
     if (isiCloudPlaceholder(name)) continue;
 
-    const full = path.join(dir, name);
+    const full = entryPath;
     let st;
     try {
       st = await fs.stat(full);

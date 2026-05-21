@@ -21,6 +21,7 @@ const fsSync = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { isDevNoise } = require('../lib/walk');
+const { isExcluded } = require('../safety/allowlist');
 
 const MIN_FILE_BYTES = 1024;            // <1 KB: too small to dedupe meaningfully
 const PARTIAL_HEAD = 64 * 1024;          // 64 KB
@@ -48,6 +49,7 @@ async function walk(dir, onFile) {
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
     if (entry.isSymbolicLink()) continue;
+    if (isExcluded(path.join(dir, entry.name))) continue;
     if (entry.isDirectory()) {
       if (isBundle(entry.name)) continue;
       // Skip node_modules / .git / dist / etc — both for speed and

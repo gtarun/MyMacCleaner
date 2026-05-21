@@ -92,6 +92,27 @@ function normalize(p) {
 // the never-touch rules to anything inside.
 const runtimeAllowedRoots = new Set();
 
+// User-defined exclusions (from settings). Anything at or inside one of
+// these is refused by the safety gate, regardless of allowlist status.
+// Loaded at boot and refreshed whenever settings change.
+let userExclusions = [];
+
+function setExclusions(list) {
+  userExclusions = (Array.isArray(list) ? list : [])
+    .filter((p) => typeof p === 'string' && p.length)
+    .map(normalize);
+}
+
+function isExcluded(p) {
+  if (typeof p !== 'string' || !p.length) return false;
+  const abs = normalize(p);
+  return userExclusions.some((ex) => isInside(abs, ex));
+}
+
+function listExclusions() {
+  return [...userExclusions];
+}
+
 function addRuntimeAllowedRoot(p) {
   runtimeAllowedRoots.add(normalize(p));
 }
@@ -154,6 +175,12 @@ function checkPathSafety(p) {
     return { ok: false, reason: 'refusing to remove top-level directory' };
   }
 
+  // User exclusions win over everything — if they said "never touch this",
+  // we never touch it, even if it's inside an allowed root.
+  if (isExcluded(abs)) {
+    return { ok: false, reason: 'path is in your exclusions list' };
+  }
+
   // Must be STRICTLY inside an allowed root — equal-to-root is rejected so
   // we never accidentally remove the root itself (which would wipe every
   // cache the user has). Only descendants are removable.
@@ -182,4 +209,7 @@ module.exports = {
   addRuntimeAllowedRoot,
   clearRuntimeAllowedRoots,
   listRuntimeAllowedRoots,
+  setExclusions,
+  isExcluded,
+  listExclusions,
 };

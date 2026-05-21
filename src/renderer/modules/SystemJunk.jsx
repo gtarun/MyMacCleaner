@@ -99,7 +99,10 @@ export function SystemJunk() {
     setCleaning(true);
     try {
       const paths = selectedItems.map((i) => i.path);
-      const results = await window.api.trashItems(paths);
+      const results = await window.api.trashItems(paths, {
+        scope: 'system-junk',
+        items: selectedItems.map((i) => ({ path: i.path, bytes: i.bytes })),
+      });
       const okCount = results.filter((r) => r.ok).length;
       const failed = results.filter((r) => !r.ok);
       const dryRun = results.some((r) => r.dryRun);

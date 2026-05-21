@@ -12,13 +12,15 @@ const { findLeftovers } = require('./scanners/uninstaller');
 const { scanLargeOld } = require('./scanners/large-old');
 const { scanDuplicates } = require('./scanners/duplicates');
 const { scanStaleProjects } = require('./scanners/stale-projects');
+const { scanDiskMap } = require('./scanners/disk-map');
 const { trashItems } = require('./safety/trash');
-const { validatePickedRoot, addRuntimeAllowedRoot, listRuntimeAllowedRoots } = require('./safety/allowlist');
+const { validatePickedRoot, addRuntimeAllowedRoot, listRuntimeAllowedRoots, setExclusions } = require('./safety/allowlist');
 const settings = require('./settings');
 const { getHealth } = require('./health');
 const { listProcesses, killProcess } = require('./processes');
 const { getTrashInfo, emptyTrash } = require('./trash-bin');
 const { getSystemReport } = require('./system-report');
+const history = require('./history');
 const scheduler = require('./scheduler');
 const tray = require('./tray');
 
@@ -28,9 +30,12 @@ const tray = require('./tray');
 // catch any that became unsafe between sessions (e.g. user moved their
 // home dir).
 function restorePersistedRoots() {
-  const { duplicates } = settings.get();
-  if (!Array.isArray(duplicates?.roots)) return;
-  for (const root of duplicates.roots) {
+  const s = settings.get();
+  // Load user exclusions into the safety gate up front so the very first
+  // scan/clean of the session already honors them.
+  setExclusions(s.exclusions);
+  if (!Array.isArray(s.duplicates?.roots)) return;
+  for (const root of s.duplicates.roots) {
     const check = validatePickedRoot(root);
     if (check.ok) addRuntimeAllowedRoot(root);
   }
@@ -56,6 +61,8 @@ function registerIpcHandlers() {
     }
     // Schedule changes need to flow through to the running timer.
     if (patch && patch.schedule) scheduler.rescheduleFromSettings();
+    // Exclusions changed → refresh the safety gate immediately.
+    if (patch && Array.isArray(patch.exclusions)) setExclusions(next.exclusions);
     // Tray title shows reclaimable bytes — refresh whenever lastResults
     // moves. Cheap enough to call on every settings update.
     try { tray.refresh(); } catch { /* tray may not exist in test envs */ }
@@ -146,12 +153,31 @@ function registerIpcHandlers() {
   // learning what the app removes. Per-result items carry `dryRun: true`
   // when applicable, so the UI swaps "Freed" → "Would free" without a
   // separate API.
-  ipcMain.handle('clean:trash-items', async (_event, paths) => {
-    if (!Array.isArray(paths)) {
-      throw new Error('clean:trash-items expects an array of paths');
-    }
+  ipcMain.handle('clean:trash-items', async (_event, arg) => {
+    // Back-compat: accept either a bare array of paths, or a richer
+    // { paths, scope, items:[{path,bytes}] } object so we can log accurate
+    // history (sizes + which module ran).
+    const paths = Array.isArray(arg) ? arg : (Array.isArray(arg?.paths) ? arg.paths : null);
+    if (!paths) throw new Error('clean:trash-items expects paths (array or { paths })');
+    const scope = Array.isArray(arg) ? null : (arg?.scope || null);
+    const meta = Array.isArray(arg) ? [] : (Array.isArray(arg?.items) ? arg.items : []);
+
     const { safety } = settings.get();
-    return trashItems(paths, { dryRun: !!safety?.dryRun });
+    const dryRun = !!safety?.dryRun;
+    const results = await trashItems(paths, { dryRun });
+
+    // Log successful real removals to the history (so they can be restored)
+    // and record the per-scope cleaned total for the Activity view.
+    if (!dryRun) {
+      const bytesByPath = new Map(meta.map((m) => [m.path, m.bytes]));
+      const succeeded = results.filter((r) => r.ok).map((r) => ({ path: r.path, bytes: bytesByPath.get(r.path) }));
+      if (succeeded.length > 0) {
+        history.record({ scope, dryRun: false, restorable: true, items: succeeded });
+        const totalBytes = succeeded.reduce((s, it) => s + (it.bytes || 0), 0);
+        if (scope && totalBytes > 0) { try { settings.recordCleaned(scope, totalBytes); } catch { /* non-fatal */ } }
+      }
+    }
+    return results;
   });
 
   // Phase 4 — Uninstaller.
@@ -208,6 +234,20 @@ function registerIpcHandlers() {
     return listRuntimeAllowedRoots();
   });
 
+  // Plain folder picker with NO side effects — used for the exclusions
+  // list, where the user is choosing folders to PROTECT, not to allow.
+  // (Reusing dialog:pick-folders here would wrongly add them to the
+  // runtime allowlist.)
+  ipcMain.handle('dialog:pick-paths', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const result = await dialog.showOpenDialog(win, {
+      title: 'Choose folders to exclude from cleaning',
+      properties: ['openDirectory', 'multiSelections', 'showHiddenFiles'],
+    });
+    if (result.canceled) return { canceled: true, paths: [] };
+    return { canceled: false, paths: result.filePaths };
+  });
+
   ipcMain.handle('scan:duplicates', async (event, opts) => {
     return scanDuplicates({
       ...(opts || {}),
@@ -226,6 +266,11 @@ function registerIpcHandlers() {
       minBytes: opts?.minBytes ?? cfg.minBytes,
       onProgress: progressEmitter(event, 'stale-projects'),
     });
+  });
+
+  // Disk space visualizer — read-only size tree for the treemap.
+  ipcMain.handle('scan:disk-map', async (event, opts) => {
+    return scanDiskMap({ ...(opts || {}), onProgress: progressEmitter(event, 'disk-map') });
   });
 
   // Phase 10 — Mac Health snapshot.
@@ -250,11 +295,25 @@ function registerIpcHandlers() {
     const { safety } = settings.get();
     const result = await emptyTrash({ dryRun: !!safety?.dryRun });
     // Record reclaimed space so the tray + Mac Health history stay honest.
-    if (result.ok && !result.dryRun && result.freedBytes > 0) {
+    if (!result.dryRun && result.freedBytes > 0) {
       try { settings.recordCleaned('trash', result.freedBytes); } catch { /* non-fatal */ }
+      // Log to history as a NON-restorable entry — emptying is permanent.
+      try {
+        history.record({
+          scope: 'trash',
+          dryRun: false,
+          restorable: false,
+          items: (result.removed || []).map((r) => ({ path: r.name, bytes: r.bytes })),
+        });
+      } catch { /* non-fatal */ }
     }
     return result;
   });
+
+  // Cleanup history + restore.
+  ipcMain.handle('history:list', async () => history.list());
+  ipcMain.handle('history:restore', async (_event, id) => history.restore(id));
+  ipcMain.handle('history:clear', async () => history.clear());
 }
 
 module.exports = { registerIpcHandlers };

@@ -89,6 +89,23 @@ export const SidebarIcon = {
       <path d="M19.5 5.5a4.5 4.5 0 0 0-7.5 1.6A4.5 4.5 0 0 0 4.5 5.5C2.5 7.4 2.5 10.6 4.5 12.5L12 20l7.5-7.5c2-1.9 2-5.1 0-7z" />
     </SvgWrap>
   ),
+  diskMap: () => (
+    <SvgWrap>
+      {/* Treemap blocks — disk space visualizer */}
+      <rect x="3" y="3" width="11" height="11" rx="1.5" />
+      <rect x="16" y="3" width="5" height="6" rx="1.5" />
+      <rect x="16" y="11" width="5" height="10" rx="1.5" />
+      <rect x="3" y="16" width="11" height="5" rx="1.5" />
+    </SvgWrap>
+  ),
+  history: () => (
+    <SvgWrap>
+      {/* Counter-clockwise arrow around a clock — history / restore */}
+      <path d="M3 5v5h5" />
+      <path d="M3.5 10a9 9 0 1 1 1.5 5" />
+      <path d="M12 8v4l3 2" />
+    </SvgWrap>
+  ),
   staleProjects: () => (
     <SvgWrap>
       {/* Folder with a clock — idle/stale project dirs */}

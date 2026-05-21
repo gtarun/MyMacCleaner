@@ -120,17 +120,18 @@ export function Uninstaller({ isActive = true }) {
     const leftovers = leftoversByApp[app.bundleId];
     const bundleKey = `bundle::${app.bundlePath}`;
     const paths = [];
-    if (sel.has(bundleKey)) paths.push(app.bundlePath);
+    const items = [];
+    if (sel.has(bundleKey)) { paths.push(app.bundlePath); items.push({ path: app.bundlePath, bytes: app.bytes }); }
     if (leftovers?.groups) {
       for (const g of leftovers.groups) for (const i of g.items) {
-        if (sel.has(i.id)) paths.push(i.path);
+        if (sel.has(i.id)) { paths.push(i.path); items.push({ path: i.path, bytes: i.bytes }); }
       }
     }
     if (paths.length === 0) return;
 
     setCleaning(true);
     try {
-      const results = await window.api.trashItems(paths);
+      const results = await window.api.trashItems(paths, { scope: 'apps', items });
       const okCount = results.filter((r) => r.ok).length;
       const failed = results.filter((r) => !r.ok);
       const dryRun = results.some((r) => r.dryRun);

@@ -74,6 +74,7 @@ async function emptyTrash({ dryRun = false } = {}) {
   let freedBytes = 0;
   let removedCount = 0;
   const errors = [];
+  const removed = []; // { name, bytes } — for the history log
 
   for (const entry of entries) {
     if (entry.name === '.DS_Store') continue;
@@ -90,6 +91,7 @@ async function emptyTrash({ dryRun = false } = {}) {
     if (dryRun) {
       freedBytes += measured.bytes;
       removedCount += 1;
+      removed.push({ name: entry.name, bytes: measured.bytes });
       continue;
     }
 
@@ -97,12 +99,13 @@ async function emptyTrash({ dryRun = false } = {}) {
       await fs.rm(full, { recursive: true, force: true });
       freedBytes += measured.bytes;
       removedCount += 1;
+      removed.push({ name: entry.name, bytes: measured.bytes });
     } catch (err) {
       errors.push({ name: entry.name, error: err.code || err.message });
     }
   }
 
-  return { ok: errors.length === 0, dryRun, freedBytes, removedCount, errors };
+  return { ok: errors.length === 0, dryRun, freedBytes, removedCount, removed, errors };
 }
 
 module.exports = { getTrashInfo, emptyTrash, TRASH_DIR };
