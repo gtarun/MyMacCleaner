@@ -36,7 +36,9 @@ jobs:
         run: npm run build:icon
 
       - name: Build distributables
-        run: npm run dist
+        # Do not let electron-builder publish to GitHub (no GH_TOKEN needed).
+        # Upload is handled by the release step below.
+        run: npm run dist:ci
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2

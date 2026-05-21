@@ -5,7 +5,7 @@
 // so the surface stays small and auditable.
 
 const os = require('node:os');
-const { ipcMain, app, dialog, BrowserWindow } = require('electron');
+const { ipcMain, app, dialog, BrowserWindow, shell } = require('electron');
 const { scanSystemJunk } = require('./scanners/system-junk');
 const { listApps } = require('./scanners/apps');
 const { findLeftovers } = require('./scanners/uninstaller');
@@ -65,6 +65,17 @@ function registerIpcHandlers() {
 
   // Manual trigger for "Run now" in the Schedule UI.
   ipcMain.handle('scheduler:run-now', async () => scheduler.runNow());
+
+  // Open an external link in the user's default browser. We only ever
+  // allow http(s) — never file:// or custom schemes — so a compromised
+  // renderer can't use this to launch local apps or read local files.
+  ipcMain.handle('shell:open-external', async (_event, url) => {
+    if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+      throw new Error('shell:open-external only accepts http(s) URLs');
+    }
+    await shell.openExternal(url);
+    return { ok: true };
+  });
 
   // Onboarding helper: do a no-op read of each user-content folder so
   // macOS surfaces its TCC permission prompts up front. Returns the

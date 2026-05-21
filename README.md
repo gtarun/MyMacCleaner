@@ -133,6 +133,8 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
+If a tag workflow failed partway through, delete the empty release on GitHub (if any), delete the tag locally and on GitHub, then re-tag and push after fixing the workflow.
+
 Workflow: [.github/workflows/release.yml](./.github/workflows/release.yml).
 
 **Option B — manual:** run `npm run build:icon && npm run dist` locally, create a [GitHub Release](https://github.com/gtarun/MyMacCleaner/releases/new), and upload the `.dmg` files from `dist-electron/`.

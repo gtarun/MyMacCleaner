@@ -30,6 +30,7 @@
     "build": "npm run build:renderer",
     "pack": "npm run build:renderer && electron-builder --dir",
     "dist": "npm run build:renderer && electron-builder",
+    "dist:ci": "npm run build:renderer && electron-builder --publish never",
     "start": "electron ."
   },
   "devDependencies": {
@@ -49,6 +50,7 @@
   "build": {
     "appId": "net.chatbotbuilder.MacCleaner",
     "productName": "MacCleaner",
+    "publish": null,
     "copyright": "© ${author}",
     "directories": {
       "buildResources": "build",

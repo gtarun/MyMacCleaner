@@ -67,7 +67,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The [release workflow](.github/workflows/release.yml) runs `npm run build:icon && npm run dist` on macOS and attaches `.dmg` / `.zip` files to that release.
+The [release workflow](.github/workflows/release.yml) runs `npm run build:icon && npm run dist:ci` on macOS and attaches `.dmg` / `.zip` files to that release (`dist:ci` skips electron-builder’s GitHub publish step).
 
 **Manual:**
 
