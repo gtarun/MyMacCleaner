@@ -1,6 +1,6 @@
 {
-  "name": "MyMacCleaner", 
-  "version": "0.1.0",
+  "name": "MyMacCleaner",
+  "version": "0.1.1",
   "description": "Open-source CleanMyMac-style cleanup utility for macOS. Conservative-by-default — everything goes to Trash.",
   "author": "Tarun (https://github.com/gtarun)",
   "license": "MIT",
@@ -75,8 +75,20 @@
     "mac": {
       "category": "public.app-category.utilities",
       "target": [
-        { "target": "dmg", "arch": ["arm64", "x64"] },
-        { "target": "zip", "arch": ["arm64", "x64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icon.icns",
       "hardenedRuntime": false,
@@ -94,10 +106,21 @@
       "title": "${productName} ${version}",
       "icon": "build/icon.icns",
       "contents": [
-        { "x": 140, "y": 200 },
-        { "x": 420, "y": 200, "type": "link", "path": "/Applications" }
+        {
+          "x": 140,
+          "y": 200
+        },
+        {
+          "x": 420,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
       ],
-      "window": { "width": 560, "height": 400 }
+      "window": {
+        "width": 560,
+        "height": 400
+      }
     }
   }
 }
