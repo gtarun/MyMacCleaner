@@ -1,6 +1,6 @@
 # MacCleaner — Implementation Plan
 
-A CleanMyMac-style Mac cleanup utility, built in Electron + Node.js. Personal use, unsigned, conservative-by-default safety.
+A CleanMyMac-style Mac cleanup utility, built in Electron + Node.js. Open source (MIT), unsigned, conservative-by-default safety.
 
 ---
 

@@ -3,23 +3,24 @@
 A free, open-source macOS cleanup utility inspired by CleanMyMac. Scan for regenerable junk, large files, app leftovers, and duplicates — review everything before anything moves. **Every removal goes to the Trash** (nothing is permanently deleted from disk).
 
 [![Latest release](https://img.shields.io/github/v/release/gtarun/MyMacCleaner?label=release)](https://github.com/gtarun/MyMacCleaner/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 ## Download
 
-Pre-built installers are published on [GitHub Releases](https://github.com/gtarun/MyMacCleaner/releases/latest).
+Pre-built installers are **not stored in git** (`dist-electron/` is in `.gitignore` on purpose — DMGs are large and belong on releases, not in the repo). Download them from [GitHub Releases](https://github.com/gtarun/MyMacCleaner/releases/latest).
 
-| Mac | File |
-|-----|------|
-| Apple Silicon (M1/M2/M3/M4) | [MacCleaner-*-arm64.dmg](https://github.com/gtarun/MyMacCleaner/releases/latest) |
-| Intel | [MacCleaner-*.dmg](https://github.com/gtarun/MyMacCleaner/releases/latest) (non-`arm64` asset) |
+| Mac | File on the release page |
+|-----|--------------------------|
+| Apple Silicon (M1/M2/M3/M4) | `MacCleaner-*-arm64.dmg` |
+| Intel | `MacCleaner-*.dmg` (filename without `arm64`) |
 
-1. Download the `.dmg` for your Mac.
+1. Download the `.dmg` for your Mac from the latest release.
 2. Open it and drag **MacCleaner** into **Applications**.
 3. Launch from Spotlight or Applications.
 
 **First launch (unsigned build):** macOS Gatekeeper may block the app. Right-click (or Control-click) **MacCleaner** in Finder → **Open** → confirm once. After that, it opens normally.
 
-> **Publishing releases:** Attach `MacCleaner-<version>-arm64.dmg` and `MacCleaner-<version>.dmg` from `dist-electron/` after running `npm run dist`. Until a release exists, you can [build from source](#build-from-source) instead.
+If no release exists yet, [build from source](#build-from-source) or publish one (see [Releases for maintainers](#releases-for-maintainers)).
 
 ## Features
 
@@ -121,6 +122,22 @@ dist-electron/
 
 Other scripts: `npm run build` (renderer only), `npm run pack` (unsigned `.app` in `dist-electron/` without full DMG packaging).
 
+### Releases for maintainers
+
+**Option A — CI (recommended):** push a version tag; GitHub Actions builds on `macos-latest` and uploads assets to the release.
+
+```bash
+# Bump version in package.json first, then:
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Workflow: [.github/workflows/release.yml](./.github/workflows/release.yml).
+
+**Option B — manual:** run `npm run build:icon && npm run dist` locally, create a [GitHub Release](https://github.com/gtarun/MyMacCleaner/releases/new), and upload the `.dmg` files from `dist-electron/`.
+
+Do not commit `dist-electron/` — only upload those files to the release.
+
 ## Project layout
 
 ```
@@ -140,39 +157,9 @@ src/
 
 ## Contributing
 
-Contributions are welcome — bug reports, docs, UI polish, and new scanners.
+Contributions are welcome — see **[CONTRIBUTING.md](./CONTRIBUTING.md)** for setup, safety rules, and pull request guidelines.
 
-### Before you start
-
-1. Check [existing issues](https://github.com/gtarun/MyMacCleaner/issues) to avoid duplicate work.
-2. For larger changes (new modules, safety rule changes), open an issue first to align on approach.
-
-### Development setup
-
-```bash
-npm install
-npm run dev
-```
-
-### Pull request guidelines
-
-- Use a focused branch and a clear PR description (what / why / how to test).
-- Match existing code style and patterns in `src/main/` and `src/renderer/`.
-- **Safety first:** new cleanup paths must go through `src/main/safety/`, use Trash only, and respect the allowlist/blocklist. Never delete protected paths (Mail, Photos, `/System`, etc.).
-- Manually test scans and clean flows on macOS before submitting.
-- Keep changes scoped; unrelated refactors belong in a separate PR.
-
-### Ideas for contributors
-
-- Additional safe junk categories (with tests and previews)
-- Scanner performance on large trees
-- Accessibility and localization
-- Signed/notarized release documentation
-- Unit tests for hash / path matching logic
-
-### Code of conduct
-
-Be respectful and constructive. Report harassment or abuse to the maintainers via GitHub issues or private contact.
+Report security issues privately — see **[SECURITY.md](./SECURITY.md)**.
 
 ## Permissions
 
@@ -182,7 +169,7 @@ Broader locations (not used by default scanners) would require **Full Disk Acces
 
 ## License
 
-This project is open source. Add a `LICENSE` file in the repository root before your first public release (MIT is a common choice for Electron apps). Until then, all rights reserved by the copyright holder.
+[MIT License](./LICENSE) — Copyright (c) 2026 Tarun. See the file for full terms.
 
 ## Disclaimer
 

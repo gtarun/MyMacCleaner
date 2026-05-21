@@ -1,9 +1,25 @@
 {
-  "name": "mac-cleaner",
+  "name": "MyMacCleaner", 
   "version": "0.1.0",
-  "description": "A CleanMyMac-style cleanup utility for macOS. Personal use, conservative-by-default.",
-  "author": "MacCleaner",
-  "private": true,
+  "description": "Open-source CleanMyMac-style cleanup utility for macOS. Conservative-by-default — everything goes to Trash.",
+  "author": "Tarun (https://github.com/gtarun)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gtarun/MyMacCleaner.git"
+  },
+  "homepage": "https://github.com/gtarun/MyMacCleaner#readme",
+  "bugs": {
+    "url": "https://github.com/gtarun/MyMacCleaner/issues"
+  },
+  "keywords": [
+    "macos",
+    "electron",
+    "disk-cleanup",
+    "duplicate-finder",
+    "uninstaller",
+    "mac-cleaner"
+  ],
   "main": "src/main/index.js",
   "scripts": {
     "dev": "concurrently -k -n vite,electron -c \"yellow,cyan\" \"npm:dev:vite\" \"npm:dev:electron\"",
@@ -56,7 +72,7 @@
       "gatekeeperAssess": false,
       "identity": null,
       "extendInfo": {
-        "NSHumanReadableCopyright": "Personal use only.",
+        "NSHumanReadableCopyright": "Copyright © Tarun. Licensed under the MIT License.",
         "LSApplicationCategoryType": "public.app-category.utilities",
         "NSDocumentsFolderUsageDescription": "MacCleaner scans your Documents folder for large or stale files.",
         "NSDesktopFolderUsageDescription": "MacCleaner scans your Desktop for large or stale files.",
