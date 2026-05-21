@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Gradient background — indigo to blue, picks up macOS app-tile feel -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#5856d6"/>
+      <stop offset="100%" stop-color="#007aff"/>
+    </linearGradient>
+
+    <!-- Soft inner highlight (top edge sheen) -->
+    <radialGradient id="sheen" cx="50%" cy="0%" r="60%">
+      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Subtle drop shadow under the glyph -->
+    <filter id="glyphShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10"/>
+      <feOffset dx="0" dy="6" result="off"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.4"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Glyph gradient (the sweep/checkmark itself) -->
+    <linearGradient id="glyph" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e6efff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded squircle tile (macOS app icon shape, 22.37% corner radius) -->
+  <rect x="0" y="0" width="1024" height="1024" rx="229" ry="229" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1024" height="1024" rx="229" ry="229" fill="url(#sheen)"/>
+
+  <!-- Sparkle/sweep glyph — three stylized rays converging into a checkmark.
+       Reads as "polish/clean" without being too on-the-nose. -->
+  <g filter="url(#glyphShadow)" transform="translate(512 540)">
+    <!-- Outer ring (orbit / scan path) -->
+    <circle r="240" fill="none" stroke="url(#glyph)" stroke-opacity="0.35" stroke-width="12"/>
+    <!-- Active arc — fills ~2/3 of the orbit -->
+    <path d="M -240 0 A 240 240 0 1 1 169.7 169.7"
+          fill="none" stroke="url(#glyph)" stroke-width="36"
+          stroke-linecap="round"/>
+    <!-- Center checkmark -->
+    <path d="M -78 8 L -10 76 L 100 -64"
+          fill="none" stroke="url(#glyph)" stroke-width="44"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

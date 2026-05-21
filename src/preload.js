@@ -1,0 +1,74 @@
+// Preload script — bridges the sandboxed renderer to the main process.
+//
+// IMPORTANT: only expose function wrappers, never `ipcRenderer` itself. If we
+// ever leaked `ipcRenderer.send` to the renderer, a compromised page could
+// invoke any IPC channel. The contextBridge boundary is our defense.
+
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('api', {
+  // --- Handshake ---
+  getSystemInfo: () => ipcRenderer.invoke('system:info'),
+
+  // --- Scans (return a single result object; no streaming yet) ---
+  scanSystemJunk: () => ipcRenderer.invoke('scan:system-junk'),
+
+  // --- Uninstaller ---
+  listApps: () => ipcRenderer.invoke('apps:list'),
+  findLeftovers: (bundleId, appName) =>
+    ipcRenderer.invoke('apps:leftovers', { bundleId, appName }),
+
+  // --- Large & Old Files ---
+  scanLargeOld: (opts) => ipcRenderer.invoke('scan:large-old', opts || {}),
+
+  // --- Duplicates ---
+  pickFolders: () => ipcRenderer.invoke('dialog:pick-folders'),
+  listPickedRoots: () => ipcRenderer.invoke('dialog:list-picked-roots'),
+  scanDuplicates: (roots) => ipcRenderer.invoke('scan:duplicates', { roots }),
+
+  // --- Cleanup (the only path that mutates disk) ---
+  trashItems: (paths) => ipcRenderer.invoke('clean:trash-items', paths),
+
+  // --- Streaming progress (subscribe once, filter by payload.scope) ---
+  // Returns an unsubscribe function. The renderer must call it on
+  // useEffect cleanup so we don't leak listeners.
+  onScanProgress: (cb) => {
+    const listener = (_e, payload) => cb(payload);
+    ipcRenderer.on('scan:progress', listener);
+    return () => ipcRenderer.removeListener('scan:progress', listener);
+  },
+
+  // --- Mac Health ---
+  getHealth: () => ipcRenderer.invoke('health:get'),
+
+  // --- Performance / processes ---
+  listProcesses: (opts) => ipcRenderer.invoke('processes:list', opts || {}),
+  killProcess:   (pid, force) => ipcRenderer.invoke('processes:kill', { pid, force }),
+
+  // --- Settings ---
+  getSettings:    ()      => ipcRenderer.invoke('settings:get'),
+  updateSettings: (patch) => ipcRenderer.invoke('settings:update', patch),
+  onSettingsChanged: (cb) => {
+    const listener = (_e, payload) => cb(payload);
+    ipcRenderer.on('settings:changed', listener);
+    return () => ipcRenderer.removeListener('settings:changed', listener);
+  },
+
+  // --- Scheduler ---
+  runScheduledScan: () => ipcRenderer.invoke('scheduler:run-now'),
+  onScheduledResult: (cb) => {
+    const listener = (_e, payload) => cb(payload);
+    ipcRenderer.on('scan:scheduled-result', listener);
+    return () => ipcRenderer.removeListener('scan:scheduled-result', listener);
+  },
+
+  // --- Tray navigation (tray menu items send this) ---
+  onTrayNavigate: (cb) => {
+    const listener = (_e, tabId) => cb(tabId);
+    ipcRenderer.on('tray:navigate', listener);
+    return () => ipcRenderer.removeListener('tray:navigate', listener);
+  },
+
+  // --- Onboarding ---
+  requestFolderAccess: () => ipcRenderer.invoke('onboarding:request-folder-access'),
+});

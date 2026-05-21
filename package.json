@@ -1,0 +1,76 @@
+{
+  "name": "mac-cleaner",
+  "version": "0.1.0",
+  "description": "A CleanMyMac-style cleanup utility for macOS. Personal use, conservative-by-default.",
+  "author": "MacCleaner",
+  "private": true,
+  "main": "src/main/index.js",
+  "scripts": {
+    "dev": "concurrently -k -n vite,electron -c \"yellow,cyan\" \"npm:dev:vite\" \"npm:dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on tcp:5173 && cross-env NODE_ENV=development electron .",
+    "build:renderer": "vite build",
+    "build:icon": "node scripts/build-icon.js",
+    "build": "npm run build:renderer",
+    "pack": "npm run build:renderer && electron-builder --dir",
+    "dist": "npm run build:renderer && electron-builder",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "sharp": "^0.33.5",
+    "vite": "^6.0.3",
+    "wait-on": "^8.0.1"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "build": {
+    "appId": "net.chatbotbuilder.MacCleaner",
+    "productName": "MacCleaner",
+    "copyright": "© ${author}",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist-electron"
+    },
+    "files": [
+      "src/main/**/*",
+      "src/preload.js",
+      "dist/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ],
+      "icon": "build/icon.icns",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null,
+      "extendInfo": {
+        "NSHumanReadableCopyright": "Personal use only.",
+        "LSApplicationCategoryType": "public.app-category.utilities",
+        "NSDocumentsFolderUsageDescription": "MacCleaner scans your Documents folder for large or stale files.",
+        "NSDesktopFolderUsageDescription": "MacCleaner scans your Desktop for large or stale files.",
+        "NSDownloadsFolderUsageDescription": "MacCleaner scans your Downloads folder for large or stale files."
+      }
+    },
+    "dmg": {
+      "title": "${productName} ${version}",
+      "icon": "build/icon.icns",
+      "contents": [
+        { "x": 140, "y": 200 },
+        { "x": 420, "y": 200, "type": "link", "path": "/Applications" }
+      ],
+      "window": { "width": 560, "height": 400 }
+    }
+  }
+}

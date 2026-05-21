@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
+  <!-- macOS template image: solid black on transparent background.
+       AppKit recolors this for light / dark menu bar automatically. -->
+  <g fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="7" />
+    <path d="M7.5 11.5 L10 14 L15 8.5" />
+  </g>
+</svg>
