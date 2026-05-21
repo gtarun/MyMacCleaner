@@ -11,6 +11,7 @@ const ACCENT_HEX = {
   orange: '#ff9f43',
   purple: '#bf6bf2',
   indigo: '#7b78f0',
+  teal:   '#2dd4bf',
 };
 
 const TILES = [
@@ -68,6 +69,21 @@ const TILES = [
       caption: r.reclaimable > 0
         ? `across ${formatCount(r.groupCount)} duplicate sets`
         : 'No duplicates in scanned folders',
+    }),
+    needsFolderPick: true,
+  },
+  {
+    scope: 'stale-projects',
+    tab: 'stale',
+    accent: 'teal',
+    label: 'Stale Projects',
+    Icon: TileIcon.staleProjects,
+    chipIcon: SidebarIcon.staleProjects,
+    summarize: (r) => ({
+      bignum: r.reclaimable > 0 ? formatBytes(r.reclaimable) : 'Clean',
+      caption: r.reclaimable > 0
+        ? `across ${formatCount(r.projectCount)} stale project${r.projectCount === 1 ? '' : 's'}`
+        : 'No stale build/dependency dirs',
     }),
     needsFolderPick: true,
   },
@@ -169,7 +185,7 @@ export function Dashboard({ setActiveTab }) {
           </div>
 
           <div className="welcome__note">
-            Duplicates runs separately — open the Duplicates tab to pick folders.
+            Duplicates and Stale Projects run separately — open their tabs to pick folders.
           </div>
 
           <SponsorCard sticky />

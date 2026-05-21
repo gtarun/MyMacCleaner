@@ -40,6 +40,7 @@
   --acc-orange: #ff9f43;
   --acc-purple: #bf6bf2;
   --acc-amber:  #f0b429;
+  --acc-teal:   #2dd4bf;
 
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.4);
 
@@ -58,6 +59,28 @@
 [data-accent="orange"] { --acc: var(--acc-orange); --acc-deep: #5a2e0d; }
 [data-accent="purple"] { --acc: var(--acc-purple); --acc-deep: #41186b; }
 [data-accent="amber"]  { --acc: var(--acc-amber);  --acc-deep: #4a3608; }
+[data-accent="teal"]   { --acc: var(--acc-teal);   --acc-deep: #0f3d38; }
+
+/* Stale Projects — inline badges on each project row. */
+.stale-badge {
+  margin-left: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--acc-teal);
+  background: rgba(45, 212, 191, 0.12);
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  padding: 1px 7px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.stale-idle {
+  margin-left: 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  vertical-align: middle;
+}
 
 * { box-sizing: border-box; }
 

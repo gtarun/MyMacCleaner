@@ -28,6 +28,12 @@ const DEFAULTS = {
     // launch. Each entry is validated against the safety rules at boot.
     roots: [],
   },
+  staleProjects: {
+    // Reuses the duplicates picked-roots for scope. Only flag heavy dirs
+    // when the project has been idle this long and is at least this big.
+    minAgeDays: 90,                     // 3 months untouched
+    minBytes: 50 * 1024 * 1024,         // 50 MB
+  },
   safety: {
     dryRun: false,                      // preview mode — never call shell.trashItem
   },

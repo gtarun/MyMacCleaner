@@ -221,7 +221,14 @@ function ScheduleTab({ settings, update }) {
 function ScanningTab({ settings, update }) {
   const lo = settings.largeOld || {};
   const dup = settings.duplicates || {};
+  const stale = settings.staleProjects || {};
   const customRoots = Array.isArray(lo.roots) ? lo.roots : null;
+
+  function updateStaleNumber(key, valueRaw, transform = (v) => v) {
+    const num = Number(valueRaw);
+    if (!Number.isFinite(num) || num < 0) return;
+    update({ staleProjects: { [key]: transform(num) } });
+  }
 
   async function addLargeOldRoot() {
     const r = await window.api.pickFolders();
@@ -334,6 +341,41 @@ function ScanningTab({ settings, update }) {
           <button className="btn btn--ghost" onClick={addDupRoot}>+ Add folder</button>
         </div>
       </section>
+
+      <section className="settings-section">
+        <h3 className="settings-section__title">Stale Projects</h3>
+        <p className="settings-section__hint">
+          Thresholds for the Stale Projects scan. A project is flagged only when its source has
+          been idle at least this long and its build/dependency dirs are at least this big. It
+          searches the same folders as Duplicates.
+        </p>
+        <div className="settings-grid">
+          <label className="settings-field">
+            <span className="settings-field__label">Idle for at least</span>
+            <div className="settings-field__input">
+              <input
+                type="number"
+                min="0"
+                value={stale.minAgeDays ?? 90}
+                onChange={(e) => updateStaleNumber('minAgeDays', e.target.value)}
+              />
+              <span className="settings-field__suffix">days</span>
+            </div>
+          </label>
+          <label className="settings-field">
+            <span className="settings-field__label">Minimum size</span>
+            <div className="settings-field__input">
+              <input
+                type="number"
+                min="1"
+                value={Math.round((stale.minBytes || 0) / 1024 / 1024)}
+                onChange={(e) => updateStaleNumber('minBytes', e.target.value, (v) => v * 1024 * 1024)}
+              />
+              <span className="settings-field__suffix">MB</span>
+            </div>
+          </label>
+        </div>
+      </section>
     </>
   );
 }
@@ -349,10 +391,12 @@ function SafetyTab({ settings, update, results }) {
   }
 
   const cleanedRows = [
-    { scope: 'system-junk', label: 'System Junk' },
-    { scope: 'large-old',   label: 'Large & Old Files' },
-    { scope: 'apps',        label: 'Uninstaller' },
-    { scope: 'duplicates',  label: 'Duplicates' },
+    { scope: 'system-junk',    label: 'System Junk' },
+    { scope: 'large-old',      label: 'Large & Old Files' },
+    { scope: 'apps',           label: 'Uninstaller' },
+    { scope: 'duplicates',     label: 'Duplicates' },
+    { scope: 'stale-projects', label: 'Stale Projects' },
+    { scope: 'trash',          label: 'Empty Trash' },
   ];
 
   return (

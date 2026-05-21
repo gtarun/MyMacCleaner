@@ -89,6 +89,15 @@ export const SidebarIcon = {
       <path d="M19.5 5.5a4.5 4.5 0 0 0-7.5 1.6A4.5 4.5 0 0 0 4.5 5.5C2.5 7.4 2.5 10.6 4.5 12.5L12 20l7.5-7.5c2-1.9 2-5.1 0-7z" />
     </SvgWrap>
   ),
+  staleProjects: () => (
+    <SvgWrap>
+      {/* Folder with a clock — idle/stale project dirs */}
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h5a2 2 0 0 1 2 2v2.5" />
+      <path d="M3 9v9a2 2 0 0 0 2 2h6" />
+      <circle cx="17.5" cy="16.5" r="4.5" />
+      <path d="M17.5 14.5v2l1.4 1.4" />
+    </SvgWrap>
+  ),
 };
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -168,6 +177,17 @@ export const TileIcon = {
       <rect x="36" y="36" width="16" height="16" rx="4" fill={glow} opacity="0.4" />
       <rect x="12" y="12" width="16" height="6" rx="4" fill={`url(#un-light)`} />
       <rect x="36" y="36" width="16" height="6" rx="4" fill={`url(#un-light)`} />
+    </TileSvg>
+  ),
+
+  // Stale Projects — folder with a clock badge
+  staleProjects: ({ size = 60, glow = '#2dd4bf' }) => (
+    <TileSvg id="stp" size={size} glow={glow}>
+      <rect x="12" y="20" width="40" height="30" rx="5" fill={`url(#stp-accent)`} />
+      <path d="M12 25 L26 25 L30 22 L52 22 L52 28 L12 28 Z" fill={glow} opacity="0.85" />
+      <rect x="12" y="20" width="40" height="7" rx="5" fill={`url(#stp-light)`} />
+      <circle cx="42" cy="42" r="11" fill="#1a1f24" stroke={glow} strokeWidth="2.5" />
+      <path d="M42 36 L42 42 L46 45" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </TileSvg>
   ),
 

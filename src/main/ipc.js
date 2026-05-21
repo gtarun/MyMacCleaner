@@ -11,6 +11,7 @@ const { listApps } = require('./scanners/apps');
 const { findLeftovers } = require('./scanners/uninstaller');
 const { scanLargeOld } = require('./scanners/large-old');
 const { scanDuplicates } = require('./scanners/duplicates');
+const { scanStaleProjects } = require('./scanners/stale-projects');
 const { trashItems } = require('./safety/trash');
 const { validatePickedRoot, addRuntimeAllowedRoot, listRuntimeAllowedRoots } = require('./safety/allowlist');
 const settings = require('./settings');
@@ -211,6 +212,19 @@ function registerIpcHandlers() {
     return scanDuplicates({
       ...(opts || {}),
       onProgress: progressEmitter(event, 'duplicates'),
+    });
+  });
+
+  // Stale-project detector. Reuses the same picked-roots + runtime
+  // allowlist as Duplicates, so heavy dirs inside picked folders are
+  // trash-able. Thresholds merge from settings when present.
+  ipcMain.handle('scan:stale-projects', async (event, opts) => {
+    const cfg = settings.get().staleProjects || {};
+    return scanStaleProjects({
+      roots: opts?.roots,
+      minAgeMs: opts?.minAgeMs ?? (cfg.minAgeDays != null ? cfg.minAgeDays * 86400000 : undefined),
+      minBytes: opts?.minBytes ?? cfg.minBytes,
+      onProgress: progressEmitter(event, 'stale-projects'),
     });
   });
 

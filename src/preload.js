@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld('api', {
   listPickedRoots: () => ipcRenderer.invoke('dialog:list-picked-roots'),
   scanDuplicates: (roots) => ipcRenderer.invoke('scan:duplicates', { roots }),
 
+  // --- Stale projects (reuses picked roots) ---
+  scanStaleProjects: (roots) => ipcRenderer.invoke('scan:stale-projects', { roots }),
+
   // --- Cleanup (the only path that mutates disk) ---
   trashItems: (paths) => ipcRenderer.invoke('clean:trash-items', paths),
 
