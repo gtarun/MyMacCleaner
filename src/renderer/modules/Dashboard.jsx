@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useScans } from '../store/ScanContext.jsx';
 import { formatBytes, formatCount } from '../lib/format.js';
 import { TileIcon, SidebarIcon } from '../components/Icons.jsx';
@@ -125,6 +126,71 @@ function progressDetail(p) {
   return 'Working…';
 }
 
+// Compact "your machine" card for the top of the Dashboard. Fetches a
+// single health snapshot on mount — no polling, so it adds nothing to idle
+// CPU/heat (see the resource-use guidance).
+function MachineCard({ setActiveTab }) {
+  const [health, setHealth] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    window.api.getHealth?.().then((h) => { if (mounted) setHealth(h); }).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  if (!health) {
+    return <div className="machine-card machine-card--loading">Reading your Mac…</div>;
+  }
+
+  const { host = {}, cpu = {}, memory, disk } = health;
+  const title = host.model || host.hostname || 'Your Mac';
+  const os = host.name ? `${host.name} ${host.version || ''}`.trim() : null;
+  const diskPct = disk ? Math.round(disk.percentUsed * 100) : null;
+
+  const stats = [];
+  if (os) stats.push({ label: 'macOS', value: os });
+  if (cpu.model) stats.push({ label: 'Chip', value: cpu.model, sub: cpu.cores ? `${cpu.cores} cores` : null });
+  if (memory) stats.push({ label: 'Memory', value: `${(memory.totalBytes / 1024 ** 3).toFixed(0)} GB` });
+
+  return (
+    <div className="machine-card">
+      <div className="machine-card__id">
+        <div className="machine-card__model">{title}</div>
+        {host.hostname && host.model && <div className="machine-card__host">{host.hostname}</div>}
+      </div>
+
+      <div className="machine-card__stats">
+        {stats.map((s) => (
+          <div key={s.label} className="machine-stat">
+            <div className="machine-stat__label">{s.label}</div>
+            <div className="machine-stat__value" title={s.value}>{s.value}</div>
+            {s.sub && <div className="machine-stat__sub">{s.sub}</div>}
+          </div>
+        ))}
+
+        {disk && (
+          <button
+            className="machine-stat machine-stat--disk"
+            onClick={() => setActiveTab('disk-map')}
+            title="Open Disk Space"
+          >
+            <div className="machine-stat__label">Storage</div>
+            <div className="machine-stat__value">
+              {formatBytes(disk.usedBytes)} <span className="machine-stat__muted">/ {formatBytes(disk.totalBytes)}</span>
+            </div>
+            <div className="machine-bar">
+              <div
+                className={`machine-bar__fill ${diskPct >= 90 ? 'machine-bar__fill--warn' : ''}`}
+                style={{ width: `${Math.max(2, diskPct)}%` }}
+              />
+            </div>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function Dashboard({ setActiveTab }) {
   const { activeScans, results, requestScan } = useScans();
 
@@ -151,6 +217,8 @@ export function Dashboard({ setActiveTab }) {
             One scan, four cleaners. Caches and dev junk, large &amp; old files, duplicates, and a real app uninstaller.
           </p>
         </header>
+
+        <MachineCard setActiveTab={setActiveTab} />
 
         <div className="welcome">
           <div className="welcome__glow">
@@ -219,6 +287,8 @@ export function Dashboard({ setActiveTab }) {
           {anyScanning ? 'Scanning…' : 'Rescan everything'}
         </button>
       </header>
+
+      <MachineCard setActiveTab={setActiveTab} />
 
       <div className="tiles">
         {TILES.map((t) => {

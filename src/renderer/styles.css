@@ -2782,3 +2782,65 @@ body.app--idle .dash-sparkle {
   border-radius: 8px;
   padding: 8px 11px;
 }
+
+/* ── Dashboard "your machine" card ──────────────────────────────────── */
+.machine-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin: 4px 0 20px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.machine-card--loading {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  justify-content: center;
+}
+.machine-card__id { min-width: 130px; }
+.machine-card__model { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+.machine-card__host { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+
+.machine-card__stats { display: flex; align-items: stretch; gap: 14px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.machine-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 96px;
+  max-width: 220px;
+  padding: 4px 14px;
+  border-left: 1px solid var(--border);
+}
+.machine-stat--disk {
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  min-width: 150px;
+}
+.machine-stat--disk:hover { background: rgba(255,255,255,0.04); }
+.machine-stat__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+.machine-stat__value {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.machine-stat__muted { color: var(--text-tertiary); font-weight: 500; }
+.machine-stat__sub { font-size: 11.5px; color: var(--text-secondary); }
+.machine-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.08); margin-top: 6px; overflow: hidden; }
+.machine-bar__fill { height: 100%; border-radius: 3px; background: var(--acc, var(--acc-indigo)); opacity: 0.85; }
+.machine-bar__fill--warn { background: #ff5b52; opacity: 0.9; }
