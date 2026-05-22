@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatBytes } from '../lib/format.js';
+import { useWindowVisible } from '../lib/hooks.js';
 import { useScans } from '../store/ScanContext.jsx';
 import { RingChart } from '../components/RingChart.jsx';
 import { ConfirmModal } from '../components/ConfirmModal.jsx';
@@ -103,20 +104,19 @@ export function MacHealth({ isActive, setActiveTab }) {
   const [emptying, setEmptying] = useState(false);
   const [emptyReport, setEmptyReport] = useState(null);
   const { results } = useScans();
+  const windowVisible = useWindowVisible();
 
-  // Initial fetch + refresh every 5s while the tab is visible. We bail
-  // out of the polling loop when navigating away so we're not waking the
-  // main process for nothing.
+  // Health stats (disk/memory/CPU) are cheap to collect, so refresh them
+  // every 5s while the tab is open and the window is on screen. We pause
+  // when hidden/navigated-away so we're not waking the main process for
+  // nothing.
   useEffect(() => {
-    if (!isActive) return undefined;
+    if (!isActive || !windowVisible) return undefined;
     let mounted = true;
     async function tick() {
       try {
-        const [h, t] = await Promise.all([
-          window.api.getHealth(),
-          window.api.getTrashInfo().catch(() => null),
-        ]);
-        if (mounted) { setHealth(h); if (t) setTrash(t); }
+        const h = await window.api.getHealth();
+        if (mounted) setHealth(h);
       } catch (err) {
         if (mounted) setError(err.message || String(err));
       }
@@ -124,7 +124,23 @@ export function MacHealth({ isActive, setActiveTab }) {
     tick();
     const id = setInterval(tick, 5000);
     return () => { mounted = false; clearInterval(id); };
-  }, [isActive]);
+  }, [isActive, windowVisible]);
+
+  // Trash size is FAR more expensive — getTrashInfo recursively walks all
+  // of ~/.Trash. Doing that on the 5s health cadence pegs the CPU/disk
+  // when the bin is large. Refresh it only on open and every 30s (plus
+  // explicitly after Empty Trash, in doEmptyTrash below).
+  useEffect(() => {
+    if (!isActive || !windowVisible) return undefined;
+    let mounted = true;
+    async function refreshTrash() {
+      const t = await window.api.getTrashInfo().catch(() => null);
+      if (mounted && t) setTrash(t);
+    }
+    refreshTrash();
+    const id = setInterval(refreshTrash, 30000);
+    return () => { mounted = false; clearInterval(id); };
+  }, [isActive, windowVisible]);
 
   async function doEmptyTrash() {
     setEmptying(true);
@@ -181,7 +197,12 @@ export function MacHealth({ isActive, setActiveTab }) {
 
       {/* 4-up metric grid */}
       <div className="health-grid">
-        <div className="health-card">
+        <button
+          type="button"
+          className="health-card health-card--link"
+          onClick={() => setActiveTab('disk-map')}
+          title="Open the Disk Space map"
+        >
           <div className="health-card__title">Disk</div>
           {health?.disk ? (
             <>
@@ -201,9 +222,15 @@ export function MacHealth({ isActive, setActiveTab }) {
           ) : (
             <div className="health-card__empty">Gathering…</div>
           )}
-        </div>
+          <div className="health-card__link">Visualize disk usage ›</div>
+        </button>
 
-        <div className="health-card">
+        <button
+          type="button"
+          className="health-card health-card--link"
+          onClick={() => setActiveTab('performance')}
+          title="Open Performance to see what's using memory"
+        >
           <div className="health-card__title">Memory</div>
           <div className="health-card__ring">
             <RingChart
@@ -217,7 +244,8 @@ export function MacHealth({ isActive, setActiveTab }) {
             <span> · {formatBytes(health?.memory?.freeBytes || 0)} free</span>
           </div>
           <div className="health-card__sub">of {formatBytes(health?.memory?.totalBytes || 0)}</div>
-        </div>
+          <div className="health-card__link">See what's using memory ›</div>
+        </button>
 
         <div className="health-card">
           <div className="health-card__title">CPU</div>
@@ -270,7 +298,9 @@ export function MacHealth({ isActive, setActiveTab }) {
               ? 'Checking…'
               : trash.itemCount === 0
                 ? 'Empty — nothing to reclaim'
-                : `${trash.itemCount} item${trash.itemCount === 1 ? '' : 's'} · ${formatBytes(trash.bytes)} reclaimable`}
+                : trash.itemCount == null
+                  ? "Couldn't read the Trash — click Empty Trash to try anyway"
+                  : `${trash.itemCount} item${trash.itemCount === 1 ? '' : 's'} · ${formatBytes(trash.bytes)} reclaimable`}
           </div>
           {emptyReport && (
             <div className={`trash-card__report ${emptyReport.ok ? 'is-ok' : 'is-err'}`}>
@@ -284,7 +314,7 @@ export function MacHealth({ isActive, setActiveTab }) {
         </div>
         <button
           className="btn btn--primary"
-          disabled={emptying || !trash || trash.itemCount === 0}
+          disabled={emptying || trash?.itemCount === 0}
           onClick={() => { setEmptyReport(null); setConfirmEmpty(true); }}
         >
           {emptying ? 'Emptying…' : 'Empty Trash'}

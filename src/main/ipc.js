@@ -13,6 +13,7 @@ const { scanLargeOld } = require('./scanners/large-old');
 const { scanDuplicates } = require('./scanners/duplicates');
 const { scanStaleProjects } = require('./scanners/stale-projects');
 const { scanDiskMap } = require('./scanners/disk-map');
+const systemData = require('./scanners/system-data');
 const { trashItems } = require('./safety/trash');
 const { validatePickedRoot, addRuntimeAllowedRoot, listRuntimeAllowedRoots, setExclusions } = require('./safety/allowlist');
 const settings = require('./settings');
@@ -271,6 +272,55 @@ function registerIpcHandlers() {
   // Disk space visualizer — read-only size tree for the treemap.
   ipcMain.handle('scan:disk-map', async (event, opts) => {
     return scanDiskMap({ ...(opts || {}), onProgress: progressEmitter(event, 'disk-map') });
+  });
+
+  // ── System Data explorer ─────────────────────────────────────────────
+  // Read-only measurement of the big opaque "System Data" buckets + local
+  // Time Machine snapshots.
+  ipcMain.handle('scan:system-data', async (event) => {
+    return systemData.scanSystemData({ onProgress: progressEmitter(event, 'system-data') });
+  });
+
+  // Clear ONE 'trash' bucket by id. We resolve the id to a known bucket
+  // here (paths never come from the renderer), enumerate its children, and
+  // move each to Trash through the same safety-gated path as every other
+  // cleaner. Review-only buckets are refused inside enumerateBucketChildren.
+  ipcMain.handle('system-data:clear-bucket', async (_event, id) => {
+    const { def, children } = await systemData.enumerateBucketChildren(id);
+    if (children.length === 0) {
+      return { ok: true, bucketId: def.id, dryRun: false, freedBytes: 0, removedCount: 0, results: [] };
+    }
+    const { safety } = settings.get();
+    const dryRun = !!safety?.dryRun;
+    const paths = children.map((c) => c.path);
+    const results = await trashItems(paths, { dryRun });
+
+    const bytesByPath = new Map(children.map((c) => [c.path, c.bytes]));
+    const succeeded = results.filter((r) => r.ok).map((r) => ({ path: r.path, bytes: bytesByPath.get(r.path) || 0 }));
+    const freedBytes = succeeded.reduce((s, it) => s + (it.bytes || 0), 0);
+
+    if (!dryRun && succeeded.length > 0) {
+      history.record({ scope: 'system-data', dryRun: false, restorable: true, items: succeeded });
+      if (freedBytes > 0) { try { settings.recordCleaned('system-data', freedBytes); } catch { /* non-fatal */ } }
+    }
+    return { ok: results.every((r) => r.ok), bucketId: def.id, dryRun, freedBytes, removedCount: succeeded.length, results };
+  });
+
+  // Delete local Time Machine snapshots by date id. Permanent (snapshots
+  // can't go to Trash), but safe — they regenerate and your real backups
+  // are untouched. Honors the global dry-run toggle and logs a
+  // non-restorable history entry.
+  ipcMain.handle('system-data:delete-snapshots', async (_event, ids) => {
+    const { safety } = settings.get();
+    const dryRun = !!safety?.dryRun;
+    const result = await systemData.deleteLocalSnapshots(ids, { dryRun });
+    if (!dryRun) {
+      const deleted = result.results.filter((r) => r.ok).map((r) => ({ path: `snapshot ${r.id}`, bytes: 0 }));
+      if (deleted.length > 0) {
+        try { history.record({ scope: 'system-data-snapshots', dryRun: false, restorable: false, items: deleted }); } catch { /* non-fatal */ }
+      }
+    }
+    return result;
   });
 
   // Phase 10 — Mac Health snapshot.

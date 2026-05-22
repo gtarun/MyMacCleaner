@@ -115,6 +115,14 @@ export const SidebarIcon = {
       <path d="M17.5 14.5v2l1.4 1.4" />
     </SvgWrap>
   ),
+  systemData: () => (
+    <SvgWrap>
+      {/* Stacked database cylinders — opaque "System Data" */}
+      <ellipse cx="12" cy="5.5" rx="7" ry="2.5" />
+      <path d="M5 5.5v5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-5" />
+      <path d="M5 10.5v5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-5" />
+    </SvgWrap>
+  ),
 };
 
 /* ─────────────────────────────────────────────────────────────────────

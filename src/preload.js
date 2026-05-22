@@ -35,6 +35,11 @@ contextBridge.exposeInMainWorld('api', {
   // --- Disk space visualizer ---
   scanDiskMap: (opts) => ipcRenderer.invoke('scan:disk-map', opts || {}),
 
+  // --- System Data explorer ---
+  scanSystemData: () => ipcRenderer.invoke('scan:system-data'),
+  clearSystemDataBucket: (id) => ipcRenderer.invoke('system-data:clear-bucket', id),
+  deleteLocalSnapshots: (ids) => ipcRenderer.invoke('system-data:delete-snapshots', ids),
+
   // --- Cleanup (the only path that mutates disk) ---
   // `meta` is optional: { scope, items:[{path,bytes}] } enables accurate
   // history logging. Falls back to a bare paths array when omitted.

@@ -3,6 +3,7 @@ import { Dashboard } from './modules/Dashboard.jsx';
 import { MacHealth } from './modules/MacHealth.jsx';
 import { Performance } from './modules/Performance.jsx';
 import { DiskMap } from './modules/DiskMap.jsx';
+import { SystemData } from './modules/SystemData.jsx';
 import { SystemJunk } from './modules/SystemJunk.jsx';
 import { LargeOldFiles } from './modules/LargeOldFiles.jsx';
 import { Uninstaller } from './modules/Uninstaller.jsx';
@@ -26,6 +27,7 @@ const MODULES = [
   { id: 'mac-health',  label: 'Mac Health',         accent: 'indigo', group: 'System',  Icon: SidebarIcon.macHealth,   component: MacHealth },
   { id: 'performance', label: 'Performance',        accent: 'amber',  group: 'System',  Icon: SidebarIcon.performance, component: Performance },
   { id: 'disk-map',    label: 'Disk Space',         accent: 'rose',   group: 'System',  Icon: SidebarIcon.diskMap,     component: DiskMap },
+  { id: 'system-data', label: 'System Data',        accent: 'blue',   group: 'System',  Icon: SidebarIcon.systemData,  component: SystemData },
   { id: 'system-junk', label: 'System Junk',        accent: 'green',  group: 'Cleanup', Icon: SidebarIcon.systemJunk,  component: SystemJunk },
   { id: 'large-old',   label: 'Large & Old Files',  accent: 'blue',   group: 'Cleanup', Icon: SidebarIcon.largeOld,    component: LargeOldFiles },
   { id: 'duplicates',  label: 'Duplicates',         accent: 'orange', group: 'Cleanup', Icon: SidebarIcon.duplicates,  component: Duplicates },
@@ -43,6 +45,7 @@ const SCOPE_LABEL = {
   'duplicates':  'Duplicates',
   'stale-projects': 'Stale Projects',
   'disk-map':    'Disk Space',
+  'system-data': 'System Data',
 };
 
 const MODULE_SCOPES = {
@@ -50,6 +53,7 @@ const MODULE_SCOPES = {
   'mac-health':  [],
   'performance': [],
   'disk-map':    ['disk-map'],
+  'system-data': ['system-data'],
   'system-junk': ['system-junk'],
   'large-old':   ['large-old'],
   'uninstaller': ['apps', 'leftovers'],
@@ -106,6 +110,28 @@ function AppShell() {
     return window.api.onTrayNavigate((tabId) => {
       if (typeof tabId === 'string') setActiveId(tabId);
     });
+  }, []);
+
+  // Pause the always-on decorative animations (glow ring, sparkles,
+  // pulsing scan dots, spinners) whenever the window loses focus or is
+  // hidden. They run forever via CSS `infinite`, and combined with the
+  // glass backdrop-filter blur they keep the GPU compositor busy — a real
+  // source of fan noise when the app sits idle in the background. The
+  // `app--idle` body class flips them to animation-play-state: paused.
+  useEffect(() => {
+    function update() {
+      const idle = document.visibilityState === 'hidden' || !document.hasFocus();
+      document.body.classList.toggle('app--idle', idle);
+    }
+    update();
+    window.addEventListener('focus', update);
+    window.addEventListener('blur', update);
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      window.removeEventListener('focus', update);
+      window.removeEventListener('blur', update);
+      document.removeEventListener('visibilitychange', update);
+    };
   }, []);
 
   const activeModule = MODULES.find((m) => m.id === activeId);

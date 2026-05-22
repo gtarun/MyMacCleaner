@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatBytes, formatCount } from '../lib/format.js';
+import { useWindowVisible } from '../lib/hooks.js';
 import { ConfirmModal } from '../components/ConfirmModal.jsx';
 
-// Live process table. Polls processes:list every 2 seconds while the
-// tab is visible. Renders sortable + filterable rows, lets the user
-// kill non-protected processes with SIGTERM (or force-kill with SIGKILL).
+// Live process table. Polls processes:list every 3 seconds while the
+// tab is visible AND the window is on screen. Renders sortable +
+// filterable rows, lets the user kill non-protected processes with
+// SIGTERM (or force-kill with SIGKILL).
 //
 // Recommendations are computed from the same snapshot — top RAM hog,
 // top CPU hog, count of multi-GB background apps, etc.
@@ -25,24 +27,30 @@ export function Performance({ isActive }) {
   const [killForce, setKillForce] = useState(false);
   const [killReport, setKillReport] = useState(null);
   const [error, setError] = useState(null);
+  const windowVisible = useWindowVisible();
 
-  // Poll every 2s while visible. Pause when navigated away so we don't
-  // pile up `ps` invocations in the background.
+  // Poll while the tab is open AND the window is on screen. We schedule
+  // the next tick only AFTER the previous one resolves (self-scheduling
+  // setTimeout, not setInterval) so a slow `ps` can never cause two
+  // invocations to overlap and pile up. Pausing when hidden/navigated-away
+  // keeps us from spawning `ps` in the background.
   useEffect(() => {
-    if (!isActive) return undefined;
+    if (!isActive || !windowVisible) return undefined;
     let alive = true;
+    let timer = null;
     async function tick() {
       try {
         const r = await window.api.listProcesses({ limit: 80, sortBy });
         if (alive) setSnapshot(r);
       } catch (err) {
         if (alive) setError(err.message || String(err));
+      } finally {
+        if (alive) timer = setTimeout(tick, 3000);
       }
     }
     tick();
-    const id = setInterval(tick, 2000);
-    return () => { alive = false; clearInterval(id); };
-  }, [isActive, sortBy]);
+    return () => { alive = false; if (timer) clearTimeout(timer); };
+  }, [isActive, windowVisible, sortBy]);
 
   const items = useMemo(() => {
     if (!snapshot?.items) return [];

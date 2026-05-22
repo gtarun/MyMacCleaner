@@ -1092,6 +1092,27 @@ input[type="search"], input[type="text"], select {
   min-height: 220px;
 }
 
+/* Disk & Memory cards double as links to their detail pages. */
+.health-card--link {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+.health-card--link:hover {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.05);
+}
+.health-card--link:active { transform: scale(0.992); }
+.health-card__link {
+  margin-top: auto;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  transition: color 120ms ease;
+}
+.health-card--link:hover .health-card__link { color: var(--acc); }
+
 .health-card__title {
   font-size: 11px;
   font-weight: 600;
@@ -2610,3 +2631,111 @@ code {
 .modal__body p { margin: 0 0 10px; }
 .modal__body p:last-child { margin-bottom: 0; }
 .modal__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+/* ── Power / heat: tame continuous GPU work ─────────────────────────────
+   The decorative loops (welcome glow ring, sparkles, pulsing scan dots,
+   spinners) animate forever. Sitting on top of the glass backdrop-filter
+   blur, they keep Chromium's compositor re-painting every frame even when
+   the user isn't doing anything, which spins up the fans. We pause them
+   whenever the window is unfocused/hidden (body.app--idle, set in App.jsx)
+   and disable the purely-decorative ones entirely for users who ask for
+   reduced motion. Active spinners are kept under reduced-motion since they
+   communicate that real work is happening. */
+body.app--idle .welcome__glow::before,
+body.app--idle .welcome__sparkle,
+body.app--idle .nav-item__dot,
+body.app--idle .spinner,
+body.app--idle .dash-sparkle {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome__glow::before,
+  .welcome__sparkle,
+  .nav-item__dot,
+  .dash-sparkle {
+    animation: none !important;
+  }
+}
+
+/* ── System Data explorer ───────────────────────────────────────────── */
+.btn--danger {
+  background: rgba(255, 91, 82, 0.14);
+  border: 1px solid rgba(255, 91, 82, 0.35);
+  color: #ff9a93;
+}
+.btn--danger:hover:not(:disabled) { background: rgba(255, 91, 82, 0.22); }
+.btn--danger:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.sysdata-report {
+  margin: 14px 0 4px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--acc) 12%, var(--bg-tile));
+  border: 1px solid color-mix(in srgb, var(--acc) 30%, transparent);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.sysdata-report--err { background: rgba(255, 91, 82, 0.12); border-color: rgba(255, 91, 82, 0.3); }
+.sysdata-report__fails { margin: 6px 0 0; padding-left: 18px; color: var(--text-secondary); font-size: 12.5px; }
+
+.sysdata-snap { margin-bottom: 16px; }
+.sysdata-snap__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.sysdata-snap__title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.sysdata-snap__sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; max-width: 640px; }
+.sysdata-snap__list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.sysdata-snap__chip {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+.sysdata-snap__chip--more { color: var(--text-tertiary); }
+
+.sysdata-list { display: flex; flex-direction: column; gap: 10px; }
+.sysdata-row {
+  background: var(--bg-tile);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 13px 15px;
+}
+.sysdata-row--absent { opacity: 0.5; }
+.sysdata-row__top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.sysdata-row__label { font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.sysdata-tag {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+.sysdata-row__size { font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sysdata-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.06); margin: 9px 0; overflow: hidden; }
+.sysdata-bar__fill { height: 100%; border-radius: 3px; background: var(--acc); opacity: 0.55; }
+.sysdata-bar__fill--safe { background: var(--acc); opacity: 0.9; }
+.sysdata-row__bottom { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.sysdata-row__note { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; max-width: 640px; }
+.sysdata-row__path { font-size: 11.5px; color: var(--text-tertiary); }
+.sysdata-row__action { flex-shrink: 0; }
+.sysdata-cmd {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  max-width: 100%;
+}
+.sysdata-cmd code { font-size: 12px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sysdata-cmd__copy { font-size: 11px; font-weight: 600; color: var(--acc); flex-shrink: 0; }
+.sysdata-cmd:hover { border-color: color-mix(in srgb, var(--acc) 40%, var(--border)); }

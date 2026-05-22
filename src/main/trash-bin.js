@@ -28,9 +28,15 @@ async function getTrashInfo() {
   let entries;
   try {
     entries = await fs.readdir(TRASH_DIR, { withFileTypes: true });
-  } catch {
-    // No Trash dir (fresh account) or no permission — report empty.
-    return { path: TRASH_DIR, exists: false, bytes: 0, fileCount: 0, itemCount: 0 };
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      // No Trash dir at all (fresh account) → genuinely empty.
+      return { path: TRASH_DIR, exists: false, bytes: 0, fileCount: 0, itemCount: 0 };
+    }
+    // Couldn't read it (e.g. permissions). We DON'T know it's empty, so
+    // report itemCount: null ("unknown") rather than 0 — otherwise the UI
+    // would wrongly disable Empty Trash while the bin still has files.
+    return { path: TRASH_DIR, exists: true, bytes: 0, fileCount: 0, itemCount: null, error: err.code || String(err) };
   }
 
   let bytes = 0;
