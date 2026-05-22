@@ -39,6 +39,11 @@ export function SystemData() {
   const [confirmSnapshots, setConfirmSnapshots] = useState(false);
   const [busySnapshots, setBusySnapshots] = useState(false);
   const [report, setReport] = useState(null); // last action result banner
+  // Curated "run a safe command" reclaim (Docker / simulators).
+  const [confirmRun, setConfirmRun] = useState(null);
+  const [busyRun, setBusyRun] = useState(null);
+  const [previewing, setPreviewing] = useState(null);
+  const [previewOut, setPreviewOut] = useState(null); // { id, text }
 
   async function runScan() {
     setState('scanning');
@@ -100,6 +105,41 @@ export function SystemData() {
     }
   }
 
+  async function runReclaim(bucket) {
+    setBusyRun(bucket.id);
+    try {
+      const r = await window.api.runSystemDataReclaim(bucket.id);
+      setReport({
+        kind: 'reclaim',
+        label: bucket.label,
+        command: r.command,
+        dryRun: r.dryRun,
+        notInstalled: r.notInstalled,
+        error: r.ok ? null : r.error,
+        stdout: (r.stdout || '').trim(),
+      });
+      await runScanQuiet();
+    } catch (err) {
+      setReport({ kind: 'reclaim', label: bucket.label, error: err.message || String(err) });
+    } finally {
+      setBusyRun(null);
+      setConfirmRun(null);
+    }
+  }
+
+  async function previewReclaim(bucket) {
+    setPreviewing(bucket.id);
+    try {
+      const r = await window.api.previewSystemDataReclaim(bucket.id);
+      const text = r.ok ? ((r.stdout || '').trim() || '(no output)') : (r.error || 'preview unavailable');
+      setPreviewOut({ id: bucket.id, text });
+    } catch (err) {
+      setPreviewOut({ id: bucket.id, text: err.message || String(err) });
+    } finally {
+      setPreviewing(null);
+    }
+  }
+
   // Refresh sizes after an action without flipping the whole view back to
   // the scanning state (keeps the results on screen).
   async function runScanQuiet() {
@@ -127,11 +167,17 @@ export function SystemData() {
       {report && (
         <div className={`sysdata-report ${report.error ? 'sysdata-report--err' : ''}`}>
           {report.error ? (
-            <>Couldn't complete: {report.error}</>
+            report.kind === 'reclaim' && report.notInstalled
+              ? <><code>{report.command}</code> — that tool isn't installed on this Mac.</>
+              : <>Couldn't complete{report.command ? <> <code>{report.command}</code></> : ''}: {report.error}</>
           ) : report.kind === 'snapshots' ? (
             report.dryRun
               ? `Dry-run: would delete ${report.removedCount} of ${report.total} local snapshots (nothing removed).`
               : `Deleted ${report.removedCount} of ${report.total} local snapshots.${report.failed.length ? ` ${report.failed.length} failed — they may need Full Disk Access.` : ''}`
+          ) : report.kind === 'reclaim' ? (
+            report.dryRun
+              ? <>Dry-run: would run <code>{report.command}</code> (nothing executed — turn off dry-run in Settings → Safety).</>
+              : <>Ran <code>{report.command}</code>.</>
           ) : (
             report.dryRun
               ? `Dry-run: would free ${formatBytes(report.freedBytes)} from ${report.label} (nothing removed).`
@@ -141,6 +187,9 @@ export function SystemData() {
             <ul className="sysdata-report__fails">
               {report.failed.slice(0, 4).map((f, i) => <li key={i}><code>{f.id}</code> — {f.error}</li>)}
             </ul>
+          )}
+          {report.kind === 'reclaim' && report.stdout && (
+            <pre className="sysdata-pre">{report.stdout}</pre>
           )}
         </div>
       )}
@@ -249,7 +298,37 @@ export function SystemData() {
                       </button>
                     )}
                   </div>
-                  {b.hint && b.exists && <CopyButton text={b.hint} />}
+                  {b.reclaim && b.exists && (
+                    <div className="sysdata-run">
+                      <button
+                        className="btn btn--primary sysdata-run__go"
+                        disabled={busyRun === b.id}
+                        onClick={() => setConfirmRun(b)}
+                      >
+                        {busyRun === b.id ? 'Running…' : b.reclaim.label}
+                      </button>
+                      {b.reclaim.previewArgs && (
+                        <button
+                          className="btn btn--ghost"
+                          disabled={previewing === b.id}
+                          onClick={() => previewReclaim(b)}
+                        >
+                          {previewing === b.id ? 'Checking…' : 'Check usage first'}
+                        </button>
+                      )}
+                      <code className="sysdata-run__cmd">{b.reclaim.display}</code>
+                    </div>
+                  )}
+                  {previewOut && previewOut.id === b.id && (
+                    <pre className="sysdata-pre">{previewOut.text}</pre>
+                  )}
+                  {b.advanced && b.exists && (
+                    <details className="sysdata-adv">
+                      <summary>Advanced: reclaim more (run manually)</summary>
+                      <p className="sysdata-adv__warn">{b.advanced.warn}</p>
+                      <CopyButton text={b.advanced.display} />
+                    </details>
+                  )}
                 </div>
               );
             })}
@@ -273,6 +352,23 @@ export function SystemData() {
         onConfirm={() => clearBucket(confirmBucket)}
         onCancel={() => setConfirmBucket(null)}
         busy={busyBucket === confirmBucket?.id}
+      />
+
+      <ConfirmModal
+        open={!!confirmRun}
+        title={confirmRun ? confirmRun.reclaim.label : ''}
+        body={confirmRun && (
+          <>
+            <p>
+              This runs <code>{confirmRun.reclaim.display}</code> for you.
+            </p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{confirmRun.reclaim.safeNote}</p>
+          </>
+        )}
+        confirmLabel="Run command"
+        onConfirm={() => runReclaim(confirmRun)}
+        onCancel={() => setConfirmRun(null)}
+        busy={busyRun === confirmRun?.id}
       />
 
       <ConfirmModal

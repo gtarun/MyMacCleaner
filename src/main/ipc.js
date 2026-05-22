@@ -306,6 +306,32 @@ function registerIpcHandlers() {
     return { ok: results.every((r) => r.ok), bucketId: def.id, dryRun, freedBytes, removedCount: succeeded.length, results };
   });
 
+  // Run a bucket's curated SAFE reclaim command (docker system prune -f,
+  // xcrun simctl delete unavailable). The renderer sends only a bucket id;
+  // the actual command is fixed in the scanner's bucketDefs and run via
+  // execFile (no shell). The aggressive docker variant is never run here.
+  ipcMain.handle('system-data:reclaim-run', async (_event, id) => {
+    const { safety } = settings.get();
+    const dryRun = !!safety?.dryRun;
+    const result = await systemData.runReclaim(id, { dryRun });
+    if (result.ok && !dryRun) {
+      try {
+        history.record({
+          scope: 'system-data-reclaim',
+          dryRun: false,
+          restorable: false,
+          items: [{ path: result.command, bytes: 0 }],
+        });
+      } catch { /* non-fatal */ }
+    }
+    return result;
+  });
+
+  // Read-only usage preview for a reclaim command (e.g. `docker system df`).
+  ipcMain.handle('system-data:reclaim-preview', async (_event, id) => {
+    return systemData.reclaimPreview(id);
+  });
+
   // Delete local Time Machine snapshots by date id. Permanent (snapshots
   // can't go to Trash), but safe — they regenerate and your real backups
   // are untouched. Honors the global dry-run toggle and logs a

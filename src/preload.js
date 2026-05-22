@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld('api', {
   scanSystemData: () => ipcRenderer.invoke('scan:system-data'),
   clearSystemDataBucket: (id) => ipcRenderer.invoke('system-data:clear-bucket', id),
   deleteLocalSnapshots: (ids) => ipcRenderer.invoke('system-data:delete-snapshots', ids),
+  runSystemDataReclaim: (id) => ipcRenderer.invoke('system-data:reclaim-run', id),
+  previewSystemDataReclaim: (id) => ipcRenderer.invoke('system-data:reclaim-preview', id),
 
   // --- Cleanup (the only path that mutates disk) ---
   // `meta` is optional: { scope, items:[{path,bytes}] } enables accurate

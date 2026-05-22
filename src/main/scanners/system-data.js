@@ -29,8 +29,21 @@ const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const { measurePath } = require('../lib/walk');
 
+const fssync = require('node:fs');
+
 const execFileAsync = promisify(execFile);
 const HOME = os.homedir();
+
+// GUI apps launched from Finder inherit a minimal PATH, so `docker` / `xcrun`
+// often aren't found by bare name. Resolve to a known absolute path when we
+// can, falling back to the bare name (which works when launched from a
+// terminal). We only ever resolve a fixed allowlist of binaries.
+function resolveBin(name, candidates = []) {
+  for (const c of candidates) {
+    try { fssync.accessSync(c, fssync.constants.X_OK); return c; } catch { /* keep looking */ }
+  }
+  return name;
+}
 
 /**
  * The curated list of big, opaque "System Data" locations. Defined as a
@@ -69,8 +82,17 @@ function bucketDefs() {
       label: 'iOS Simulator devices',
       path: path.join(DEV, 'CoreSimulator', 'Devices'),
       action: 'review',
-      note: 'Per-simulator state and installed apps. Reclaim unused ones safely with the command below.',
-      hint: 'xcrun simctl delete unavailable',
+      note: 'Per-simulator state and installed apps.',
+      // Safe, curated command the app can run for you. Fixed argv — the
+      // renderer only ever sends the bucket id, never a command string.
+      reclaim: {
+        label: 'Delete unavailable simulators',
+        display: 'xcrun simctl delete unavailable',
+        bin: 'xcrun',
+        candidates: ['/usr/bin/xcrun'],
+        args: ['simctl', 'delete', 'unavailable'],
+        safeNote: 'Removes only simulators whose runtime is no longer installed. Your active/usable simulators are kept.',
+      },
     },
     {
       id: 'xcode-archives',
@@ -91,8 +113,26 @@ function bucketDefs() {
       label: 'Docker data',
       path: path.join(HOME, 'Library', 'Containers', 'com.docker.docker'),
       action: 'review',
-      note: 'Docker VM disk image (the displayed size is "apparent" and is often larger than real disk use). Reclaim space with the command below rather than deleting files.',
-      hint: 'docker system prune -a --volumes',
+      note: 'Docker VM disk image (the displayed size is "apparent" and is usually larger than real disk use). Reclaim space with Docker\'s own cleanup rather than deleting files.',
+      reclaim: {
+        label: 'Run docker system prune',
+        display: 'docker system prune -f',
+        bin: 'docker',
+        candidates: [
+          '/opt/homebrew/bin/docker',
+          '/usr/local/bin/docker',
+          '/Applications/Docker.app/Contents/Resources/bin/docker',
+        ],
+        args: ['system', 'prune', '-f'],
+        previewArgs: ['system', 'df'],
+        safeNote: 'Removes stopped containers, dangling images, unused networks, and build cache. Does NOT remove volumes, and does NOT remove images used by running containers — so no database data is touched.',
+      },
+      // Copy-only, never auto-run: the aggressive variant that can delete
+      // data. Surfaced for power users who know their setup.
+      advanced: {
+        display: 'docker system prune -a --volumes',
+        warn: 'Also deletes ALL unused images and ALL unused volumes. A volume for a stopped container counts as "unused", so this can erase database data. Run it yourself only after checking `docker volume ls`.',
+      },
     },
     {
       id: 'user-caches',
@@ -201,6 +241,54 @@ async function enumerateBucketChildren(id) {
 }
 
 /**
+ * Run a bucket's curated SAFE reclaim command (e.g. `docker system prune -f`).
+ * The command is fixed in bucketDefs — the caller only passes a bucket id, so
+ * there's no way to inject an arbitrary command. Runs via execFile (no shell).
+ * Honors dryRun. Returns { ok, dryRun, command, stdout, stderr, notInstalled? }.
+ */
+async function runReclaim(id, { dryRun = false } = {}) {
+  const def = getBucket(id);
+  if (!def || !def.reclaim) throw new Error(`no reclaim command for bucket: ${id}`);
+  const r = def.reclaim;
+  if (dryRun) {
+    return { ok: true, dryRun: true, command: r.display, stdout: '', stderr: '' };
+  }
+  const bin = resolveBin(r.bin, r.candidates);
+  try {
+    const { stdout, stderr } = await execFileAsync(bin, r.args, { timeout: 180000, maxBuffer: 8 * 1024 * 1024 });
+    return { ok: true, dryRun: false, command: r.display, stdout: stdout || '', stderr: stderr || '' };
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      return { ok: false, dryRun: false, command: r.display, notInstalled: true, error: `${r.bin} is not installed (or not found) on this Mac` };
+    }
+    const msg = (err && err.stderr && String(err.stderr).trim()) || (err && err.message) || 'command failed';
+    return { ok: false, dryRun: false, command: r.display, error: msg, stdout: (err && err.stdout) || '' };
+  }
+}
+
+/**
+ * Read-only "what would I reclaim" preview (e.g. `docker system df`). Never
+ * mutates anything. Returns { ok, command, stdout, stderr } or
+ * { ok:false, unsupported|notInstalled }.
+ */
+async function reclaimPreview(id) {
+  const def = getBucket(id);
+  if (!def || !def.reclaim || !def.reclaim.previewArgs) {
+    return { ok: false, unsupported: true };
+  }
+  const r = def.reclaim;
+  const bin = resolveBin(r.bin, r.candidates);
+  const display = `${r.bin} ${r.previewArgs.join(' ')}`;
+  try {
+    const { stdout, stderr } = await execFileAsync(bin, r.previewArgs, { timeout: 60000, maxBuffer: 8 * 1024 * 1024 });
+    return { ok: true, command: display, stdout: stdout || '', stderr: stderr || '' };
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return { ok: false, command: display, notInstalled: true, error: `${r.bin} is not installed on this Mac` };
+    return { ok: false, command: display, error: (err && err.stderr && String(err.stderr).trim()) || (err && err.message) || 'preview failed' };
+  }
+}
+
+/**
  * Full scan. Measures every bucket (emitting progress per bucket) and lists
  * local snapshots. Read-only — nothing is deleted here.
  */
@@ -241,4 +329,6 @@ module.exports = {
   enumerateBucketChildren,
   listLocalSnapshots,
   deleteLocalSnapshots,
+  runReclaim,
+  reclaimPreview,
 };
