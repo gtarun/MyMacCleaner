@@ -1,6 +1,6 @@
 {
   "name": "MyMacCleaner",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Open-source CleanMyMac-style cleanup utility for macOS. Conservative-by-default — everything goes to Trash.",
   "author": "Tarun (https://github.com/gtarun)",
   "license": "MIT",
