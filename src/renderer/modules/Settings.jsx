@@ -408,6 +408,7 @@ function SafetyTab({ settings, update, results }) {
     { scope: 'apps',           label: 'Uninstaller' },
     { scope: 'duplicates',     label: 'Duplicates' },
     { scope: 'stale-projects', label: 'Stale Projects' },
+    { scope: 'installers',     label: 'Leftover Installers' },
     { scope: 'trash',          label: 'Empty Trash' },
   ];
 

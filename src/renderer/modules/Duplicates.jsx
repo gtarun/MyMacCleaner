@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatBytes, formatCount, abbreviateHome } from '../lib/format.js';
 import { ConfirmModal } from '../components/ConfirmModal.jsx';
+import { RevealButton } from '../components/RevealButton.jsx';
 import { useScanScope } from '../store/ScanContext.jsx';
 
 // Pretty labels for each scanner phase. Used in the inline status row.
@@ -274,6 +275,7 @@ export function Duplicates() {
                                   {' · '}
                                   modified {formatDate(c.mtimeMs)}
                                 </span>
+                                <RevealButton path={c.path} />
                               </label>
                             );
                           })}

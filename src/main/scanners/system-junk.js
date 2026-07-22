@@ -14,7 +14,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
-const { measureDir } = require('../lib/walk');
+const { measureDir, diskBytes } = require('../lib/walk');
 
 const HOME = os.homedir();
 
@@ -192,7 +192,7 @@ async function scanCategory(category, onProgress) {
         fileCount = m.fileCount;
       } else if (entry.isFile()) {
         const st = await fs.stat(full);
-        bytes = st.size;
+        bytes = diskBytes(st);
         fileCount = 1;
       } else {
         continue; // skip symlinks / sockets at top level

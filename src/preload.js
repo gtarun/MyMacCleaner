@@ -32,6 +32,9 @@ contextBridge.exposeInMainWorld('api', {
   // --- Stale projects (reuses picked roots) ---
   scanStaleProjects: (roots) => ipcRenderer.invoke('scan:stale-projects', { roots }),
 
+  // --- Leftover installers (~/Downloads) ---
+  scanInstallers: (opts) => ipcRenderer.invoke('scan:installers', opts || {}),
+
   // --- Disk space visualizer ---
   scanDiskMap: (opts) => ipcRenderer.invoke('scan:disk-map', opts || {}),
 
@@ -103,4 +106,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // --- External links (http/https only, enforced in main) ---
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
+
+  // --- Reveal a file/folder in Finder (read-only; selects, never opens) ---
+  showInFinder: (path) => ipcRenderer.invoke('shell:show-in-folder', path),
 });

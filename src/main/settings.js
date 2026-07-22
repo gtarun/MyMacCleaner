@@ -34,6 +34,12 @@ const DEFAULTS = {
     minAgeDays: 90,                     // 3 months untouched
     minBytes: 50 * 1024 * 1024,         // 50 MB
   },
+  installers: {
+    // Leftover disk images / packages in ~/Downloads. Only surface ones left
+    // behind for at least this long — a fresh download is probably about to
+    // be used. Nothing is ever pre-selected (Downloads holds real work too).
+    minAgeDays: 30,
+  },
   safety: {
     dryRun: false,                      // preview mode — never call shell.trashItem
   },
@@ -67,6 +73,7 @@ const DEFAULTS = {
     'large-old':   null,
     'apps':        null,
     'duplicates':  null,
+    'installers':  null,
   },
 };
 

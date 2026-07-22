@@ -13,6 +13,7 @@ const ACCENT_HEX = {
   purple: '#bf6bf2',
   indigo: '#7b78f0',
   teal:   '#2dd4bf',
+  pink:   '#f472d0',
 };
 
 const TILES = [
@@ -44,6 +45,21 @@ const TILES = [
       caption: r.flaggedCount > 0
         ? `across ${formatCount(r.flaggedCount)} flagged files`
         : 'No oversized or stale files',
+    }),
+  },
+  {
+    scope: 'installers',
+    tab: 'installers',
+    accent: 'pink',
+    label: 'Leftover Installers',
+    tagline: 'Old disk images and packages in Downloads you already installed from.',
+    Icon: TileIcon.installers,
+    chipIcon: SidebarIcon.installers,
+    summarize: (r) => ({
+      bignum: r.flaggedCount > 0 ? formatBytes(r.totalBytes) : 'Clean',
+      caption: r.flaggedCount > 0
+        ? `across ${formatCount(r.flaggedCount)} old installer${r.flaggedCount === 1 ? '' : 's'}`
+        : 'No stale installers in Downloads',
     }),
   },
   {
@@ -90,7 +106,7 @@ const TILES = [
   },
 ];
 
-const SCOPES_FOR_SCAN_EVERYTHING = ['system-junk', 'large-old', 'apps'];
+const SCOPES_FOR_SCAN_EVERYTHING = ['system-junk', 'large-old', 'installers', 'apps'];
 
 // Sparkle positions for the welcome state glow. Picked once at module
 // load so they stay stable across re-renders (random per-render would

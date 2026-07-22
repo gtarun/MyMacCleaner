@@ -9,6 +9,7 @@ import { LargeOldFiles } from './modules/LargeOldFiles.jsx';
 import { Uninstaller } from './modules/Uninstaller.jsx';
 import { Duplicates } from './modules/Duplicates.jsx';
 import { StaleProjects } from './modules/StaleProjects.jsx';
+import { Installers } from './modules/Installers.jsx';
 import { History } from './modules/History.jsx';
 import { Settings } from './modules/Settings.jsx';
 import { ScanProvider, useScans } from './store/ScanContext.jsx';
@@ -32,6 +33,7 @@ const MODULES = [
   { id: 'large-old',   label: 'Large & Old Files',  accent: 'blue',   group: 'Cleanup', Icon: SidebarIcon.largeOld,    component: LargeOldFiles },
   { id: 'duplicates',  label: 'Duplicates',         accent: 'orange', group: 'Cleanup', Icon: SidebarIcon.duplicates,  component: Duplicates },
   { id: 'stale',       label: 'Stale Projects',     accent: 'teal',   group: 'Cleanup', Icon: SidebarIcon.staleProjects, component: StaleProjects },
+  { id: 'installers',  label: 'Leftover Installers', accent: 'pink',  group: 'Cleanup', Icon: SidebarIcon.installers,  component: Installers },
   { id: 'uninstaller', label: 'Uninstaller',        accent: 'purple', group: 'Apps',    Icon: SidebarIcon.uninstaller, component: Uninstaller },
   { id: 'history',     label: 'History',            accent: 'indigo', group: null,      Icon: SidebarIcon.history,     component: History,   pinBottom: true },
   { id: 'settings',    label: 'Settings',           accent: 'indigo', group: null,      Icon: SidebarIcon.settings,    component: Settings,  pinBottom: true },
@@ -44,6 +46,7 @@ const SCOPE_LABEL = {
   'leftovers':   'App leftovers',
   'duplicates':  'Duplicates',
   'stale-projects': 'Stale Projects',
+  'installers':  'Leftover Installers',
   'disk-map':    'Disk Space',
   'system-data': 'System Data',
 };
@@ -59,6 +62,7 @@ const MODULE_SCOPES = {
   'uninstaller': ['apps', 'leftovers'],
   'duplicates':  ['duplicates'],
   'stale':       ['stale-projects'],
+  'installers':  ['installers'],
   'settings':    [],
 };
 

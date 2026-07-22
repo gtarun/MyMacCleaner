@@ -123,6 +123,15 @@ export const SidebarIcon = {
       <path d="M5 10.5v5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-5" />
     </SvgWrap>
   ),
+  installers: () => (
+    <SvgWrap>
+      {/* Disk image with a downward arrow — leftover installers in Downloads */}
+      <rect x="4" y="4" width="16" height="16" rx="4" />
+      <path d="M12 8v5" />
+      <path d="M9.5 11l2.5 2.5 2.5-2.5" />
+      <path d="M8.5 16.5h7" />
+    </SvgWrap>
+  ),
 };
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -213,6 +222,18 @@ export const TileIcon = {
       <rect x="12" y="20" width="40" height="7" rx="5" fill={`url(#stp-light)`} />
       <circle cx="42" cy="42" r="11" fill="#1a1f24" stroke={glow} strokeWidth="2.5" />
       <path d="M42 36 L42 42 L46 45" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </TileSvg>
+  ),
+
+  // Leftover Installers — disk image with a download arrow
+  installers: ({ size = 60, glow = '#f472d0' }) => (
+    <TileSvg id="inst" size={size} glow={glow}>
+      <rect x="14" y="14" width="36" height="36" rx="8" fill={`url(#inst-accent)`} />
+      <rect x="14" y="14" width="36" height="11" rx="8" fill={`url(#inst-light)`} />
+      <circle cx="32" cy="31" r="9" fill="none" stroke="#fff" strokeWidth="2.4" opacity="0.85" />
+      <path d="M32 27v6" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M28.5 30l3.5 3.5 3.5-3.5" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <rect x="24" y="43" width="16" height="2.6" rx="1.3" fill="#fff" opacity="0.6" />
     </TileSvg>
   ),
 

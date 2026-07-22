@@ -12,6 +12,7 @@ const { findLeftovers } = require('./scanners/uninstaller');
 const { scanLargeOld } = require('./scanners/large-old');
 const { scanDuplicates } = require('./scanners/duplicates');
 const { scanStaleProjects } = require('./scanners/stale-projects');
+const { scanInstallers } = require('./scanners/installers');
 const { scanDiskMap } = require('./scanners/disk-map');
 const systemData = require('./scanners/system-data');
 const { trashItems } = require('./safety/trash');
@@ -85,6 +86,18 @@ function registerIpcHandlers() {
       throw new Error('shell:open-external only accepts http(s) URLs');
     }
     await shell.openExternal(url);
+    return { ok: true };
+  });
+
+  // Reveal a file or folder in Finder. Read-only — this selects the item in
+  // a Finder window, it never opens/executes it and never mutates anything.
+  // We only accept a non-empty absolute string; the path is passed straight
+  // to Finder, so there's nothing here that could delete or run code.
+  ipcMain.handle('shell:show-in-folder', async (_event, p) => {
+    if (typeof p !== 'string' || !p.startsWith('/')) {
+      throw new Error('shell:show-in-folder expects an absolute path');
+    }
+    shell.showItemInFolder(p);
     return { ok: true };
   });
 
@@ -266,6 +279,17 @@ function registerIpcHandlers() {
       minAgeMs: opts?.minAgeMs ?? (cfg.minAgeDays != null ? cfg.minAgeDays * 86400000 : undefined),
       minBytes: opts?.minBytes ?? cfg.minBytes,
       onProgress: progressEmitter(event, 'stale-projects'),
+    });
+  });
+
+  // Leftover installers — old .dmg/.pkg/.zip left in ~/Downloads. Settings
+  // supplies the age threshold; the caller can override it.
+  ipcMain.handle('scan:installers', async (event, opts) => {
+    const cfg = settings.get().installers || {};
+    return scanInstallers({
+      root: opts?.root,
+      minAgeMs: opts?.minAgeMs ?? (cfg.minAgeDays != null ? cfg.minAgeDays * 86400000 : undefined),
+      onProgress: progressEmitter(event, 'installers'),
     });
   });
 

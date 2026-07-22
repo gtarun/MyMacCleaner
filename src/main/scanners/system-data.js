@@ -135,6 +135,37 @@ function bucketDefs() {
       },
     },
     {
+      id: 'homebrew',
+      label: 'Homebrew cache & old versions',
+      // The download cache is home-relative (same on Intel + Apple Silicon).
+      // `brew cleanup` also reclaims outdated versions from the Cellar, which
+      // lives under a DIFFERENT prefix per architecture (/opt/homebrew on
+      // Apple Silicon, /usr/local on Intel) — but we never touch the Cellar
+      // directly; `brew` does, so we don't need to branch on the prefix here.
+      path: path.join(HOME, 'Library', 'Caches', 'Homebrew'),
+      action: 'review',
+      // The download cache sits INSIDE ~/Library/Caches, which the
+      // 'user-caches' bucket already measures — so exclude it from the summed
+      // total to avoid double-counting. Still measured and shown on its row.
+      countInTotal: false,
+      note: 'Downloaded bottles plus outdated installed versions Homebrew keeps around. The measured size is just the download cache; `brew cleanup` also frees old versions from the Cellar. Run it below or with `brew cleanup`.',
+      reclaim: {
+        label: 'Run brew cleanup',
+        display: 'brew cleanup',
+        bin: 'brew',
+        // Arch-aware resolution: Apple Silicon installs to /opt/homebrew,
+        // Intel to /usr/local. Bare `brew` is the terminal-launch fallback.
+        candidates: ['/opt/homebrew/bin/brew', '/usr/local/bin/brew'],
+        args: ['cleanup'],
+        // `brew cleanup -n` is a dry-run that prints what WOULD be freed and
+        // an approximate total — a perfect read-only preview.
+        previewArgs: ['cleanup', '-n'],
+        // Keep Homebrew from auto-updating (slow, network) mid-cleanup.
+        env: { HOMEBREW_NO_AUTO_UPDATE: '1', HOMEBREW_NO_ANALYTICS: '1' },
+        safeNote: 'Removes stale downloads and versions of formulae you have already upgraded past. It never uninstalls a currently-installed formula or cask, so nothing you actively use is removed.',
+      },
+    },
+    {
       id: 'user-caches',
       label: 'Application caches',
       path: path.join(HOME, 'Library', 'Caches'),
@@ -254,8 +285,11 @@ async function runReclaim(id, { dryRun = false } = {}) {
     return { ok: true, dryRun: true, command: r.display, stdout: '', stderr: '' };
   }
   const bin = resolveBin(r.bin, r.candidates);
+  // Some tools (Homebrew) need env tweaks to stay fast/quiet. Spread over the
+  // inherited env so PATH and friends survive.
+  const env = r.env ? { ...process.env, ...r.env } : process.env;
   try {
-    const { stdout, stderr } = await execFileAsync(bin, r.args, { timeout: 180000, maxBuffer: 8 * 1024 * 1024 });
+    const { stdout, stderr } = await execFileAsync(bin, r.args, { timeout: 180000, maxBuffer: 8 * 1024 * 1024, env });
     return { ok: true, dryRun: false, command: r.display, stdout: stdout || '', stderr: stderr || '' };
   } catch (err) {
     if (err && err.code === 'ENOENT') {
@@ -278,9 +312,10 @@ async function reclaimPreview(id) {
   }
   const r = def.reclaim;
   const bin = resolveBin(r.bin, r.candidates);
+  const env = r.env ? { ...process.env, ...r.env } : process.env;
   const display = `${r.bin} ${r.previewArgs.join(' ')}`;
   try {
-    const { stdout, stderr } = await execFileAsync(bin, r.previewArgs, { timeout: 60000, maxBuffer: 8 * 1024 * 1024 });
+    const { stdout, stderr } = await execFileAsync(bin, r.previewArgs, { timeout: 60000, maxBuffer: 8 * 1024 * 1024, env });
     return { ok: true, command: display, stdout: stdout || '', stderr: stderr || '' };
   } catch (err) {
     if (err && err.code === 'ENOENT') return { ok: false, command: display, notInstalled: true, error: `${r.bin} is not installed on this Mac` };
@@ -305,7 +340,10 @@ async function scanSystemData({ onProgress } = {}) {
     i += 1;
     report({ phase: 'measuring', category: def.label, currentItem: def.label, itemsDone: i, itemsTotal: defs.length });
     const b = await measureBucket(def);
-    if (b.exists) totalBytes += b.bytes;
+    // Some buckets (e.g. Homebrew's cache, which lives inside ~/Library/Caches)
+    // are a subset of another bucket — measure and show them, but keep them
+    // out of the summed total so we don't count the same bytes twice.
+    if (b.exists && b.countInTotal !== false) totalBytes += b.bytes;
     buckets.push(b);
   }
 

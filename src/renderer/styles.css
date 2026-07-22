@@ -42,6 +42,7 @@
   --acc-amber:  #f0b429;
   --acc-teal:   #2dd4bf;
   --acc-rose:   #fb7185;
+  --acc-pink:   #f472d0;
 
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.4);
 
@@ -62,6 +63,7 @@
 [data-accent="amber"]  { --acc: var(--acc-amber);  --acc-deep: #4a3608; }
 [data-accent="teal"]   { --acc: var(--acc-teal);   --acc-deep: #0f3d38; }
 [data-accent="rose"]   { --acc: var(--acc-rose);   --acc-deep: #5a1e2e; }
+[data-accent="pink"]   { --acc: var(--acc-pink);   --acc-deep: #4d1440; }
 
 /* Stale Projects — inline badges on each project row. */
 .stale-badge {
@@ -2320,6 +2322,33 @@ code {
 .file-row__size, .file-row__date { font-variant-numeric: tabular-nums; font-size: 12.5px; text-align: right; color: var(--text-primary); }
 .file-row__date { color: var(--text-secondary); }
 
+/* Show-in-Finder button — shared across results rows. Compact, quiet, and
+   (inside a row) only fully visible on hover so it doesn't add clutter. */
+.reveal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, opacity 120ms ease, border-color 120ms ease;
+}
+.reveal-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-strong, var(--border));
+  color: var(--text-primary);
+}
+/* Inside dense file rows: reveal on row hover to keep the resting state clean. */
+.file-row__main .reveal-btn { margin-left: auto; opacity: 0; }
+.file-row:hover .reveal-btn,
+.reveal-btn:focus-visible { opacity: 1; }
+
 .file-table__more {
   padding: 13px 18px;
   text-align: center;
@@ -2573,7 +2602,7 @@ code {
 
 .dup-copy {
   display: grid;
-  grid-template-columns: 22px 1fr auto;
+  grid-template-columns: 22px 1fr auto auto;
   align-items: center;
   gap: 10px;
   padding: 7px 16px 7px 36px;
@@ -2724,6 +2753,7 @@ body.app--idle .dash-sparkle {
 .sysdata-row__note { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; max-width: 640px; }
 .sysdata-row__path { font-size: 11.5px; color: var(--text-tertiary); }
 .sysdata-row__action { flex-shrink: 0; }
+.sysdata-row__actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .sysdata-cmd {
   display: inline-flex;
   align-items: center;

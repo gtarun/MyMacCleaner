@@ -12,6 +12,7 @@ const SCOPE_LABEL = {
   'apps':           'Uninstaller',
   'duplicates':     'Duplicates',
   'stale-projects': 'Stale Projects',
+  'installers':     'Leftover Installers',
   'trash':          'Empty Trash',
   'cleanup':        'Cleanup',
 };

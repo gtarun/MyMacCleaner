@@ -1,38 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatBytes, formatCount, abbreviateHome } from '../lib/format.js';
 import { ConfirmModal } from '../components/ConfirmModal.jsx';
 import { RevealButton } from '../components/RevealButton.jsx';
 import { useScanScope } from '../store/ScanContext.jsx';
 
-const TABS = [
-  { id: 'large', label: 'Large files', hint: '≥ 100 MB' },
-  { id: 'old',   label: 'Stale files', hint: 'not opened in 6+ months' },
-];
-
-// Cheap emoji "icons" by extension — keeps the UI readable without
-// bundling a real icon set. Sized down via CSS, not the emoji itself.
-const ICONS = {
-  video: '🎬', audio: '🎵', image: '🖼', archive: '📦',
-  pdf: '📄', text: '📝', code: '⚙', exec: '⚡', other: '📁',
-};
-const EXT_TO_KIND = {
-  '.mp4': 'video', '.mov': 'video', '.mkv': 'video', '.avi': 'video', '.webm': 'video', '.m4v': 'video',
-  '.mp3': 'audio', '.wav': 'audio', '.flac': 'audio', '.aac': 'audio', '.m4a': 'audio', '.aif': 'audio', '.aiff': 'audio',
-  '.jpg': 'image', '.jpeg': 'image', '.png': 'image', '.gif': 'image', '.heic': 'image', '.tiff': 'image', '.psd': 'image', '.raw': 'image', '.nef': 'image', '.cr2': 'image',
-  '.zip': 'archive', '.tar': 'archive', '.gz': 'archive', '.bz2': 'archive', '.7z': 'archive', '.rar': 'archive', '.dmg': 'archive', '.iso': 'archive', '.pkg': 'archive',
-  '.pdf': 'pdf',
-  '.txt': 'text', '.md': 'text', '.rtf': 'text', '.doc': 'text', '.docx': 'text',
-  '.js': 'code', '.ts': 'code', '.jsx': 'code', '.tsx': 'code', '.py': 'code', '.rb': 'code', '.go': 'code', '.rs': 'code', '.swift': 'code', '.json': 'code',
-  '.exe': 'exec', '.bin': 'exec',
-};
-
+// Emoji glyphs by installer type — same lightweight approach as LargeOldFiles.
+const ICONS = { dmg: '💿', pkg: '📦', mpkg: '📦', xip: '🗜', iso: '💿', zip: '🗜', other: '📦' };
 function iconFor(ext) {
-  return ICONS[EXT_TO_KIND[ext] || 'other'];
+  const k = (ext || '').replace('.', '');
+  return ICONS[k] || ICONS.other;
 }
 
-function formatDate(ms) {
-  if (!ms) return '—';
-  const days = Math.floor((Date.now() - ms) / 86400000);
+function formatAge(days) {
+  if (days == null) return '—';
   if (days < 1) return 'today';
   if (days < 7) return `${days}d ago`;
   if (days < 30) return `${Math.floor(days / 7)}w ago`;
@@ -40,13 +20,12 @@ function formatDate(ms) {
   return `${Math.floor(days / 365)}y ago`;
 }
 
-export function LargeOldFiles() {
-  const { progress, markActive, setResult, requested, clearRequest } = useScanScope('large-old');
-  const [state, setState] = useState('idle'); // idle, scanning, results, done
+export function Installers() {
+  const { progress, markActive, setResult, requested, clearRequest } = useScanScope('installers');
+  const [state, setState] = useState('idle'); // idle | scanning | results | done
   const [scan, setScan] = useState(null);
   const [scanError, setScanError] = useState(null);
-  const [tab, setTab] = useState('large');
-  const [selected, setSelected] = useState(new Set()); // file ids
+  const [selected, setSelected] = useState(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cleaning, setCleaning] = useState(false);
   const [cleanReport, setCleanReport] = useState(null);
@@ -58,24 +37,11 @@ export function LargeOldFiles() {
     setSelected(new Set());
     markActive(true);
     try {
-      const result = await window.api.scanLargeOld();
+      const result = await window.api.scanInstallers();
       setScan(result);
-      // Surface a summary so the Dashboard card can render.
-      // De-dupe files that show up in both lists for an accurate count.
-      const dedupedIds = new Set();
-      let dedupedBytes = 0;
-      for (const arr of [result.large, result.old]) {
-        for (const f of arr) {
-          if (dedupedIds.has(f.id)) continue;
-          dedupedIds.add(f.id);
-          dedupedBytes += f.bytes;
-        }
-      }
       setResult({
-        totalBytes: dedupedBytes,
-        flaggedCount: dedupedIds.size,
-        large: result.large.length,
-        old: result.old.length,
+        totalBytes: result.totalBytes,
+        flaggedCount: result.items.length,
         visited: result.visitedCount,
       });
       setState('results');
@@ -100,38 +66,19 @@ export function LargeOldFiles() {
     });
   }
 
-  function toggleAllVisible(items) {
+  function toggleAll(items) {
     setSelected((prev) => {
-      const visibleIds = items.map((i) => i.id);
-      const allChecked = visibleIds.every((id) => prev.has(id));
+      const ids = items.map((i) => i.id);
+      const allChecked = ids.every((id) => prev.has(id));
       const next = new Set(prev);
-      if (allChecked) visibleIds.forEach((id) => next.delete(id));
-      else visibleIds.forEach((id) => next.add(id));
+      if (allChecked) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
       return next;
     });
   }
 
-  const visibleItems = useMemo(() => {
-    if (!scan) return [];
-    return tab === 'large' ? scan.large : scan.old;
-  }, [scan, tab]);
-
-  // De-duped selected files (an item might appear in both Large AND Old)
-  const selectedItems = useMemo(() => {
-    if (!scan) return [];
-    const seen = new Set();
-    const out = [];
-    for (const arr of [scan.large, scan.old]) {
-      for (const i of arr) {
-        if (selected.has(i.id) && !seen.has(i.id)) {
-          seen.add(i.id);
-          out.push(i);
-        }
-      }
-    }
-    return out;
-  }, [scan, selected]);
-
+  const items = scan?.items || [];
+  const selectedItems = items.filter((i) => selected.has(i.id));
   const selectedBytes = selectedItems.reduce((s, i) => s + i.bytes, 0);
 
   async function confirmClean() {
@@ -139,7 +86,7 @@ export function LargeOldFiles() {
     try {
       const paths = selectedItems.map((i) => i.path);
       const results = await window.api.trashItems(paths, {
-        scope: 'large-old',
+        scope: 'installers',
         items: selectedItems.map((i) => ({ path: i.path, bytes: i.bytes })),
       });
       const okCount = results.filter((r) => r.ok).length;
@@ -171,26 +118,26 @@ export function LargeOldFiles() {
   return (
     <div className="module">
       <header className="module__header">
-        <h1 className="module__title">Large &amp; Old Files</h1>
+        <h1 className="module__title">Leftover Installers</h1>
         <p className="module__subtitle">
-          Surface files over 100 MB or untouched for 6+ months across Documents, Downloads, Desktop, Movies, and Pictures.
+          Disk images and packages sitting in <code>~/Downloads</code> that you already installed
+          from and haven't touched in a month. Some of the safest bytes to reclaim.
         </p>
       </header>
 
       {state === 'idle' && (
         <div className="module__card">
           <p className="module__placeholder">
-            Scans 5 folders: <code>~/Documents</code>, <code>~/Downloads</code>,{' '}
-            <code>~/Desktop</code>, <code>~/Movies</code>, <code>~/Pictures</code>. Bundles
-            (<code>.app</code>, <code>.photoslibrary</code>, etc.) are treated as opaque —
-            we never descend into them. iCloud-offloaded files are skipped.
+            Scans <code>~/Downloads</code> for <code>.dmg</code>, <code>.pkg</code>,{' '}
+            <code>.xip</code>, <code>.iso</code>, and <code>.zip</code> files older than 30 days.
+            Fresh downloads are left alone.
           </p>
           <div className="warn-card" style={{ marginTop: 18 }}>
-            <strong>These are your files.</strong> Nothing is pre-selected; review every
-            row carefully. Items move to Trash (recoverable until you empty it).
+            <strong>Downloads can hold real work.</strong> Nothing is pre-selected — review each
+            row. Items move to Trash (recoverable until you empty it).
           </div>
           <button className="module__cta" onClick={runScan} style={{ marginTop: 20 }}>
-            Scan default folders
+            Scan Downloads
           </button>
           {scanError && <div className="module__error">Scan failed: {scanError}</div>}
         </div>
@@ -200,15 +147,11 @@ export function LargeOldFiles() {
         <div className="module__card scan-state">
           <div className="spinner" />
           <p className="scan-state__text">
-            {progress?.currentRoot ? `Walking ${progress.currentRoot}` : 'Starting walk…'}
+            {progress?.currentRoot ? `Scanning ${progress.currentRoot}` : 'Starting…'}
           </p>
           <p className="scan-state__hint">
-            {progress?.visited != null && (
-              <>{formatCount(progress.visited)} files scanned</>
-            )}
-            {progress?.foundLarge != null && progress?.foundOld != null && (
-              <> · {progress.foundLarge} large · {progress.foundOld} stale flagged</>
-            )}
+            {progress?.visited != null && <>{formatCount(progress.visited)} installers checked</>}
+            {progress?.found != null && <> · {progress.found} flagged</>}
             {progress?.currentItem && <> · <code>{progress.currentItem}</code></>}
           </p>
         </div>
@@ -219,38 +162,20 @@ export function LargeOldFiles() {
           <div className="results-summary">
             <div>
               <div className="results-summary__bignum">
-                {formatCount(scan.large.length + scan.old.length - countOverlap(scan))}
+                {items.length > 0 ? formatBytes(scan.totalBytes) : 'Clean'}
               </div>
               <div className="results-summary__label">
-                files flagged · {formatCount(scan.visitedCount)} scanned in {(scan.durationMs/1000).toFixed(1)}s
-                {scan.skippedCount > 0 && (
-                  <> · {scan.skippedCount} dev folders skipped</>
-                )}
+                {items.length > 0
+                  ? <>{formatCount(items.length)} old installer{items.length === 1 ? '' : 's'} · scanned in {(scan.durationMs / 1000).toFixed(1)}s</>
+                  : <>No installers older than 30 days · scanned in {(scan.durationMs / 1000).toFixed(1)}s</>}
               </div>
             </div>
             <button className="btn btn--ghost" onClick={runScan}>Rescan</button>
           </div>
 
-          <div className="tabs">
-            {TABS.map((t) => {
-              const count = t.id === 'large' ? scan.large.length : scan.old.length;
-              return (
-                <button
-                  key={t.id}
-                  className={`tab ${tab === t.id ? 'tab--active' : ''}`}
-                  onClick={() => setTab(t.id)}
-                >
-                  <span className="tab__label">{t.label}</span>
-                  <span className="tab__count">{formatCount(count)}</span>
-                  <span className="tab__hint">{t.hint}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {visibleItems.length === 0 ? (
+          {items.length === 0 ? (
             <div className="empty-state">
-              Nothing here. {tab === 'large' ? 'No files ≥ 100 MB.' : 'No files older than 6 months.'}
+              Nothing to clean. Your Downloads folder has no stale installers.
             </div>
           ) : (
             <>
@@ -258,20 +183,20 @@ export function LargeOldFiles() {
                 <div className="file-table__header">
                   <input
                     type="checkbox"
-                    checked={visibleItems.every((i) => selected.has(i.id))}
+                    checked={items.every((i) => selected.has(i.id))}
                     ref={(el) => {
                       if (!el) return;
-                      const some = visibleItems.some((i) => selected.has(i.id));
-                      const all = visibleItems.every((i) => selected.has(i.id));
+                      const some = items.some((i) => selected.has(i.id));
+                      const all = items.every((i) => selected.has(i.id));
                       el.indeterminate = some && !all;
                     }}
-                    onChange={() => toggleAllVisible(visibleItems)}
+                    onChange={() => toggleAll(items)}
                   />
-                  <span>File</span>
+                  <span>Installer</span>
                   <span style={{ textAlign: 'right' }}>Size</span>
-                  <span style={{ textAlign: 'right' }}>Last opened</span>
+                  <span style={{ textAlign: 'right' }}>Downloaded</span>
                 </div>
-                {visibleItems.slice(0, 500).map((file) => (
+                {items.slice(0, 500).map((file) => (
                   <label className="file-row" key={file.id}>
                     <input
                       type="checkbox"
@@ -289,19 +214,19 @@ export function LargeOldFiles() {
                       <RevealButton path={file.path} />
                     </div>
                     <span className="file-row__size">{formatBytes(file.bytes)}</span>
-                    <span className="file-row__date">{formatDate(file.atimeMs)}</span>
+                    <span className="file-row__date">{formatAge(file.ageDays)}</span>
                   </label>
                 ))}
-                {visibleItems.length > 500 && (
+                {items.length > 500 && (
                   <div className="file-table__more">
-                    Showing first 500 of {formatCount(visibleItems.length)}. Filter by selecting some and clearing your scan to see more.
+                    Showing the 500 biggest of {formatCount(items.length)}.
                   </div>
                 )}
               </div>
 
               <div className="action-bar">
                 <div className="action-bar__summary">
-                  <span className="action-bar__count">{selectedItems.length}</span> files selected ·{' '}
+                  <span className="action-bar__count">{selectedItems.length}</span> selected ·{' '}
                   <strong>{formatBytes(selectedBytes)}</strong>
                 </div>
                 <button
@@ -325,16 +250,16 @@ export function LargeOldFiles() {
               ? `Would free ${formatBytes(cleanReport.bytesFreed)}`
               : (cleanReport.succeeded === cleanReport.attempted
                   ? `Freed ${formatBytes(cleanReport.bytesFreed)}`
-                  : `Freed ${formatBytes(cleanReport.bytesFreed)} (some files skipped)`)}
+                  : `Freed ${formatBytes(cleanReport.bytesFreed)} (some skipped)`)}
           </h2>
           <p className="done-state__note">
             {cleanReport.dryRun
               ? 'Dry-run mode is on. Nothing was actually removed — toggle it off in Settings → Safety to clean for real.'
-              : 'Files are in your Trash. Empty it from Finder to permanently reclaim disk space.'}
+              : 'Installers are in your Trash. Empty it from Finder to permanently reclaim disk space.'}
           </p>
           {cleanReport.failed.length > 0 && (
             <details className="done-state__failed">
-              <summary>{cleanReport.failed.length} files could not be removed</summary>
+              <summary>{cleanReport.failed.length} could not be removed</summary>
               <ul>
                 {cleanReport.failed.slice(0, 20).map((f, i) => (
                   <li key={i}><code>{f.path || '(no path)'}</code> — {f.error}</li>
@@ -350,31 +275,23 @@ export function LargeOldFiles() {
 
       <ConfirmModal
         open={confirmOpen}
-        title="Move these files to Trash?"
+        title="Move these installers to Trash?"
         body={
           <>
             <p>
-              <strong>{selectedItems.length}</strong> files totaling{' '}
+              <strong>{selectedItems.length}</strong> installer{selectedItems.length === 1 ? '' : 's'} totaling{' '}
               <strong>{formatBytes(selectedBytes)}</strong> will move to your Trash.
             </p>
             <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-              These are personal files — make sure none of them are important. You can
-              restore from Finder any time before emptying the Trash.
+              You can restore any of them from Finder before emptying the Trash.
             </p>
           </>
         }
-        confirmLabel={`Move ${selectedItems.length} files to Trash`}
+        confirmLabel={`Move ${selectedItems.length} to Trash`}
         onConfirm={confirmClean}
         onCancel={() => setConfirmOpen(false)}
         busy={cleaning}
       />
     </div>
   );
-}
-
-function countOverlap(scan) {
-  const oldIds = new Set(scan.old.map((i) => i.id));
-  let overlap = 0;
-  for (const i of scan.large) if (oldIds.has(i.id)) overlap += 1;
-  return overlap;
 }

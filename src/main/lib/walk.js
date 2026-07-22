@@ -40,6 +40,35 @@ const DEV_NOISE_DIRS = new Set([
 
 function isDevNoise(name) { return DEV_NOISE_DIRS.has(name); }
 
+// Feature flag: measure REAL on-disk footprint (allocated blocks) rather than
+// the file's apparent length. Flip to false to fall back to `st.size`
+// everywhere.
+//
+// Why this matters: `st.size` is the apparent length. For a *sparse* file it
+// wildly overstates disk use — Docker's `Docker.raw` reports 60+ GB apparent
+// while occupying a fraction of that. Conversely APFS clone/compressed files
+// can occupy fewer blocks than their length. `st.blocks * 512` is what the
+// volume actually gave the file, which is the number the user cares about when
+// they're trying to reclaim space (and the number Finder's "on disk" shows).
+//
+// For ordinary files the difference is just 4 KB-block rounding, so totals in
+// other modules move by a rounding-error margin at most; for sparse files it's
+// the difference between a lie and the truth. When `blocks` is unavailable
+// (0/undefined — some filesystems, or Windows) we fall back to `size`.
+const USE_DISK_BLOCKS = true;
+
+/**
+ * Real on-disk bytes for a stat result. Prefers allocated blocks (512-byte
+ * units, the historical unit of `st_blocks`) and falls back to apparent size
+ * when blocks aren't reported.
+ */
+function diskBytes(st) {
+  if (USE_DISK_BLOCKS && typeof st.blocks === 'number' && st.blocks > 0) {
+    return st.blocks * 512;
+  }
+  return st.size;
+}
+
 /**
  * Recursive directory size. Returns { bytes, fileCount }.
  *
@@ -47,6 +76,8 @@ function isDevNoise(name) { return DEV_NOISE_DIRS.has(name); }
  *   so one bad entry can't fail the whole scan.
  * - Symlinks are stat'd, not followed — counts the link's own size only,
  *   avoiding both cycles and accidentally counting data outside the root.
+ * - `bytes` is real on-disk usage (allocated blocks), not apparent size — see
+ *   `diskBytes`.
  */
 async function measureDir(dir) {
   let bytes = 0;
@@ -64,7 +95,7 @@ async function measureDir(dir) {
     try {
       if (entry.isSymbolicLink()) {
         const st = await fs.lstat(full);
-        bytes += st.size;
+        bytes += diskBytes(st);
         fileCount += 1;
       } else if (entry.isDirectory()) {
         const sub = await measureDir(full);
@@ -72,7 +103,7 @@ async function measureDir(dir) {
         fileCount += sub.fileCount;
       } else if (entry.isFile()) {
         const st = await fs.stat(full);
-        bytes += st.size;
+        bytes += diskBytes(st);
         fileCount += 1;
       }
     } catch {
@@ -91,10 +122,10 @@ async function measurePath(p) {
   try {
     const st = await fs.lstat(p);
     if (st.isDirectory()) return measureDir(p);
-    return { bytes: st.size, fileCount: 1 };
+    return { bytes: diskBytes(st), fileCount: 1 };
   } catch {
     return { bytes: 0, fileCount: 0 };
   }
 }
 
-module.exports = { measureDir, measurePath, DEV_NOISE_DIRS, isDevNoise };
+module.exports = { measureDir, measurePath, diskBytes, DEV_NOISE_DIRS, isDevNoise };

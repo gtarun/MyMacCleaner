@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { formatBytes, formatCount, abbreviateHome } from '../lib/format.js';
 import { ConfirmModal } from '../components/ConfirmModal.jsx';
+import { RevealButton } from '../components/RevealButton.jsx';
 import { useScanScope } from '../store/ScanContext.jsx';
 
 // System Data explorer. Surfaces the big, opaque places macOS files under
@@ -288,15 +289,18 @@ export function SystemData() {
                     <span className="sysdata-row__note">
                       {b.note} <code className="sysdata-row__path">{abbreviateHome(b.path)}</code>
                     </span>
-                    {trashable && (
-                      <button
-                        className="btn btn--ghost sysdata-row__action"
-                        disabled={busyBucket === b.id}
-                        onClick={() => setConfirmBucket(b)}
-                      >
-                        {busyBucket === b.id ? 'Clearing…' : 'Move to Trash'}
-                      </button>
-                    )}
+                    <div className="sysdata-row__actions">
+                      {b.exists && <RevealButton path={b.path} />}
+                      {trashable && (
+                        <button
+                          className="btn btn--ghost sysdata-row__action"
+                          disabled={busyBucket === b.id}
+                          onClick={() => setConfirmBucket(b)}
+                        >
+                          {busyBucket === b.id ? 'Clearing…' : 'Move to Trash'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {b.reclaim && b.exists && (
                     <div className="sysdata-run">
