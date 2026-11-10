@@ -19,7 +19,12 @@ Pre-built installers are **not stored in git** (`dist-electron/` is in `.gitigno
 2. Open it and drag **MacCleaner** into **Applications**.
 3. Launch from Spotlight or Applications.
 
-**First launch (unsigned build):** macOS Gatekeeper may block the app. Right-click (or Control-click) **MacCleaner** in Finder → **Open** → confirm once. After that, it opens normally.
+**First launch (unsigned build):** current releases aren't notarized yet, so macOS blocks the first launch.
+
+- **macOS 15 Sequoia and later:** open MacCleaner once (it will be blocked), then go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the MacCleaner message. Confirm with your password.
+- **macOS 14 and earlier:** right-click (or Control-click) **MacCleaner** in Finder → **Open** → confirm once.
+
+After that, it opens normally. Signed and notarized builds are on the way.
 
 If no release exists yet, [build from source](#build-from-source) or publish one (see [Releases for maintainers](#releases-for-maintainers)).
 
